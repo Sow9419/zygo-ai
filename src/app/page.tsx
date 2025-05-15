@@ -1,103 +1,173 @@
-import Image from "next/image";
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect, useRef } from "react"
+import { TrendingSection } from "@/components/search/trending-section"
+import { BackgroundSlider } from "@/components/media/background-slider"
+import { useRouter } from "next/navigation"
+
+// Composants refactorisés
+import { Header } from "@/components/navigation/header"
+import { MainContent } from "@/components/search/main-content"
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [query, setQuery] = useState("")
+  const [isRecording, setIsRecording] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+  // Fermer le menu et les suggestions quand on clique en dehors ou appuie sur Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        menuRef.current &&
+        buttonRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setMenuOpen(false)
+      }
+
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false)
+      }
+    }
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenuOpen(false)
+        setShowSuggestions(false)
+        if (isRecording) {
+          setIsRecording(false)
+        }
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("keydown", handleEscape)
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+      document.removeEventListener("keydown", handleEscape)
+    }
+  }, [isRecording])
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (query.trim()) {
+      router.push(`/search?q=${encodeURIComponent(query)}`)
+    }
+  }
+
+  const handleVoiceSearch = () => {
+    if (!("webkitSpeechRecognition" in window)) {
+      alert("La reconnaissance vocale n'est pas prise en charge par votre navigateur.")
+      return
+    }
+
+    setIsRecording(!isRecording)
+
+    // @ts-expect-error - SpeechRecognition n'est pas encore dans les types TypeScript standards
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)()
+    recognition.lang = "fr-FR"
+    recognition.interimResults = false
+    recognition.maxAlternatives = 1
+
+    recognition.onresult = (event: { results: { transcript: string }[][] }) => {
+      const transcript = event.results[0][0].transcript
+      setQuery(transcript)
+      setIsRecording(false)
+
+      // Soumettre automatiquement après une courte pause
+      setTimeout(() => {
+        router.push(`/search?q=${encodeURIComponent(transcript)}`)
+      }, 500)
+    }
+
+    recognition.onerror = () => {
+      setIsRecording(false)
+    }
+
+    recognition.onend = () => {
+      setIsRecording(false)
+    }
+
+    recognition.start()
+  }
+
+  const handleImageSearch = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    }
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Ici, vous pourriez implémenter une véritable recherche par image
+      // Pour l'instant, nous simulons en ajoutant un texte prédéfini
+      setQuery("Recherche par image similaire à " + file.name)
+
+      // Réinitialiser l'input file pour permettre de sélectionner le même fichier à nouveau
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    }
+  }
+
+  const clearSearch = () => {
+    setQuery("")
+  }
+  const handleSuggestionClick = (suggestion: string) => {
+    setQuery(suggestion)
+    router.push(`/search?q=${encodeURIComponent(suggestion)}`)
+    setShowSuggestions(false)
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* Background Slider with animation effects */}
+      <BackgroundSlider />
+
+      {/* Header refactorisé */}
+      <Header 
+        menuOpen={menuOpen} 
+        setMenuOpen={setMenuOpen} 
+        menuRef={menuRef as React.RefObject<HTMLDivElement>}
+        buttonRef={buttonRef as React.RefObject<HTMLButtonElement>}
+      />
+
+      {/* Main Content refactorisé */}
+      <MainContent 
+        query={query}
+        setQuery={setQuery}
+        showSuggestions={showSuggestions}
+        setShowSuggestions={setShowSuggestions}
+        suggestionsRef={suggestionsRef as React.RefObject<HTMLDivElement>}
+        isRecording={isRecording}
+        setIsRecording={setIsRecording}
+        handleVoiceSearch={handleVoiceSearch}
+        handleImageSearch={handleImageSearch}
+        handleSearch={handleSearch}
+        clearSearch={clearSearch}
+        fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
+        handleImageUpload={handleImageUpload}
+        handleSuggestionClick={handleSuggestionClick}
+      />
+
+      {/* Trending Section */}
+      <div className="relative z-20 mt-auto">
+        <TrendingSection />
+      </div>
     </div>
-  );
+  )
 }
