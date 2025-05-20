@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Menu, X, Heart, LogIn } from "lucide-react"
+import { Menu, X, LogIn } from "lucide-react"
 import { TimeDisplay } from "@/components/media/time-display"
 import { LocationBadge } from "@/components/location/location-badge"
 import { MenuDropdown } from "@/components/navigation/menu-dropdown"
@@ -30,11 +30,6 @@ export function Header({ menuOpen, setMenuOpen, menuRef, buttonRef }: HeaderProp
 
         <div className="flex items-center space-x-4">
           <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/favorites" className="text-white hover:text-purple-300 transition-colors flex items-center">
-              <Heart className="h-4 w-4 mr-1" />
-              <span>Favoris</span>
-            </Link>
-            
             <Link
               href="/login"
               className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full transition-colors flex items-center"
