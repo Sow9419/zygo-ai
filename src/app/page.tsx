@@ -13,11 +13,13 @@ import { MainContent } from "@/components/search/main-content"
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [applicationOpen, setApplicationOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [isRecording, setIsRecording] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const applicationRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
@@ -144,6 +146,9 @@ export default function Home() {
         setMenuOpen={setMenuOpen} 
         menuRef={menuRef as React.RefObject<HTMLDivElement>}
         buttonRef={buttonRef as React.RefObject<HTMLButtonElement>}
+        applicationOpen={applicationOpen}
+        setApplicationOpen={setApplicationOpen}
+        applicationRef={applicationRef as React.RefObject<HTMLDivElement>}
       />
 
       {/* Main Content refactorisé */}

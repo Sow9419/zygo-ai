@@ -14,7 +14,7 @@ export function MenuDropdown({ menuRef, setMenuOpen, isLoggedIn = false }: MenuD
   return (
     <div
       ref={menuRef}
-      className="fixed right-4 top-16 w-64 bg-white/50 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden z-50 border animate-in slide-in-from-top-5 duration-200"
+      className="fixed right-4 top-16 w-64 bg-black/80 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden z-50 border animate-in slide-in-from-top-5 duration-200"
     >
       <div className="py-2">
         {/* En-tête avec informations utilisateur */}
@@ -34,17 +34,17 @@ export function MenuDropdown({ menuRef, setMenuOpen, isLoggedIn = false }: MenuD
             )}
           </div>
           <div className="flex-1">
-            <div className="font-medium text-gray-800">
+            <div className="font-medium text-white/60">
               {isLoggedIn ? "User name" : "Invité"}
             </div>
-            <div className="text-xs text-gray-800">
+            <div className="text-xs text-white/60">
               {isLoggedIn ? "example@gmail.com" : "Non connecté"}
             </div>
           </div>
         </div>
 
         {/* Paramètres */}
-        <div className="bg-black/50 rounded-2xl ml-1 mr-1">
+        <div className="bg-white/10 rounded-2xl ml-1 mr-1">
         <Link
           href="/settings"
           className="flex items-center px-4 py-3 text-white hover:bg-white/15 transition-colors"
@@ -75,9 +75,7 @@ export function MenuDropdown({ menuRef, setMenuOpen, isLoggedIn = false }: MenuD
           <HelpCircle className="w-5 h-5 mr-3 text-white" />
           <span>Help center</span>
         </Link>
-        </div>
-
-          {/* Connexion ou Déconnexion */}
+        {/* Connexion ou Déconnexion */}
         <div className="px-4 py-3">
           {isLoggedIn ? (
             <Link
@@ -98,9 +96,9 @@ export function MenuDropdown({ menuRef, setMenuOpen, isLoggedIn = false }: MenuD
             </Link>
           )}
         </div>
-
+        </div>
         {/* Visily logo */}
-        <div className="px-4 py-3 text-center text-xs text-black">
+        <div className="px-4 py-3 text-center text-xs text-white">
           Made with <span className="text-purple-600">ZYGO AI</span>
         </div>
       </div>
