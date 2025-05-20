@@ -21,30 +21,52 @@ interface HeaderProps {
 export function Header({ menuOpen, setMenuOpen, menuRef, buttonRef, applicationRef, setApplicationOpen, applicationOpen }: HeaderProps) {
   // État pour gérer le montage du composant (pour éviter les erreurs d'hydratation)
   const [isMounted, setIsMounted] = useState(false);
+  // État pour suivre si l'utilisateur a défilé
+  const [hasScrolled, setHasScrolled] = useState(false);
   
   // Effet pour marquer le composant comme monté après le rendu initial
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  // Effet pour détecter le défilement de la page
+  useEffect(() => {
+    const handleScroll = () => {
+      // Considérer comme défilé si la position est > 10px
+      setHasScrolled(window.scrollY > 10);
+    };
+    
+    // Ajouter l'écouteur d'événement
+    window.addEventListener('scroll', handleScroll);
+    
+    // Vérifier la position initiale
+    handleScroll();
+    
+    // Nettoyer l'écouteur d'événement
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   return (
-    <header className="relative z-30 flex flex-col p-3 bg-gradient-to-b from-black/60 to-transparent">
+    <header className={`fixed top-0 left-0 right-0 z-30 flex flex-col bg-gradient-to-b from-black/60 to-transparent ${hasScrolled ? 'backdrop-blur-lg' : ''}`}>
       {/* Top navigation */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-2 mt-4">
         <div className="flex items-center">
           <div className="flex items-center">
-            <Link href="/" className="relative h-8 w-28 mr-2">
+            <Link href="/" className="relative h-8 w-16 sm:w-20 md:w-22 lg:w-28 mr-2">
               <Image src="/placeholder.svg?height=32&width=112" alt="ZYGO Search" fill className="object-contain" />
             </Link>
             {/* button galerie application */}
-            <div className="relative">
+            <div className="relative flex items-center">
               <button
-                className="text-white p-2 rounded-full hover:bg-white/30 transition-colors bg-black/20"
+                className="text-white p-2 rounded-full hover:bg-white/30 transition-colors bg-black/20 flex items-center justify-center"
                 onClick={() => setApplicationOpen(!applicationOpen)}
                 aria-expanded={applicationOpen}
                 aria-label="Galerie d'applications"
               >
                 {applicationOpen ? <X className="h-6 w-6" /> : <Grip className="h-6 w-6" />}
+                <span className="text-white ml-2 ">Application</span>
               </button>
               {isMounted && applicationOpen && <ApplicationGallery applicationRef={applicationRef} setApplicationOpen={setApplicationOpen} />}
             </div>
@@ -80,25 +102,7 @@ export function Header({ menuOpen, setMenuOpen, menuRef, buttonRef, applicationR
           </div>
         </div>
       </div>
-
-      {/* Location and Time display - positioned below header, above title */}
-      <div className="w-full mb-8">
-        {/* Mobile layout - Les deux composants empilés verticalement à droite */}
-        <div className="md:hidden flex justify-end">
-          <div className="flex flex-col items-end gap-3">
-            <TimeDisplay />
-            <LocationBadge />
-          </div>
-        </div>
-
-        {/* Desktop layout - Les deux composants empilés verticalement à droite */}
-        <div className="hidden md:flex justify-end">
-          <div className="flex flex-col items-end gap-3">
-            <TimeDisplay />
-            <LocationBadge />
-          </div>
-        </div>
-      </div>
+      
     </header>
   )
 }

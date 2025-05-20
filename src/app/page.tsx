@@ -10,6 +10,8 @@ import { useRouter } from "next/navigation"
 // Composants refactorisés
 import { Header } from "@/components/navigation/header"
 import { MainContent } from "@/components/search/main-content"
+import { TimeDisplay } from "@/components/media/time-display"
+import { LocationBadge } from "@/components/location/location-badge"
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -150,6 +152,24 @@ export default function Home() {
         setApplicationOpen={setApplicationOpen}
         applicationRef={applicationRef as React.RefObject<HTMLDivElement>}
       />
+      {/* Location and Time display - positioned below header, above title */}
+      <div className="w-full mb-8 mt-20 pr-2">
+        {/* Mobile layout - Les deux composants empilés verticalement à droite */}
+        <div className="md:hidden flex justify-end">
+          <div className="flex flex-col items-end gap-3">
+            <TimeDisplay />
+            <LocationBadge />
+          </div>
+        </div>
+
+        {/* Desktop layout - Les deux composants empilés verticalement à droite */}
+        <div className="hidden md:flex justify-end">
+          <div className="flex flex-col items-end gap-3">
+            <TimeDisplay />
+            <LocationBadge />
+          </div>
+        </div>
+      </div>
 
       {/* Main Content refactorisé */}
       <MainContent 
