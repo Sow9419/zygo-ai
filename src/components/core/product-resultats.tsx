@@ -168,7 +168,7 @@ const ProductResultats: React.FC = () => {
 
   return (
     <div className="p-3 md:p-6 min-h-screen">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-3">
         {productsData.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}

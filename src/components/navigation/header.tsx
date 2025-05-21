@@ -3,8 +3,6 @@
 import Image from "next/image"
 import Link from "next/link"
 import { AlignRight, X, LogIn, Grip } from "lucide-react"
-import { TimeDisplay } from "@/components/media/time-display"
-import { LocationBadge } from "@/components/location/location-badge"
 import { MenuDropdown } from "@/components/navigation/menu-dropdown"
 import ApplicationGallery from "./application-galery"
 import { useState, useEffect } from "react"
