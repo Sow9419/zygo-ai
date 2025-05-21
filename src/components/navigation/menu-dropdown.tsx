@@ -14,7 +14,7 @@ export function MenuDropdown({ menuRef, setMenuOpen, isLoggedIn = false }: MenuD
   return (
     <div
       ref={menuRef}
-      className="fixed right-4 top-16 w-64 bg-black/80 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden z-50 border animate-in slide-in-from-top-5 duration-200"
+      className="fixed right-4 top-16 w-64 bg-black/80 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden z-50 border animate-in slide-in-from-top-5 duration-200 "
     >
       <div className="py-2">
         {/* En-tête avec informations utilisateur */}

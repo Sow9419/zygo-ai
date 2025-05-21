@@ -269,7 +269,7 @@ export function RelatedSearches({ query }: { query: string }) {
     return (
       <div className="bg-white rounded-lg shadow-sm p-4">
         <h2 className="text-lg font-medium mb-4 flex items-center">
-          <TrendingUp className="h-5 w-5 text-purple-500 mr-2" />
+          <TrendingUp className="h-5 w-5 text-white mr-2" />
           Recherches associées
         </h2>
         <div className="flex flex-wrap gap-2">
@@ -285,19 +285,19 @@ export function RelatedSearches({ query }: { query: string }) {
     return (
       <div className="bg-white rounded-lg shadow-sm p-4">
         <h2 className="text-lg font-medium mb-4 flex items-center">
-          <TrendingUp className="h-5 w-5 text-purple-500 mr-2" />
+          <TrendingUp className="h-5 w-5 text-white mr-2" />
           Recherches associées
         </h2>
         <p className="text-gray-500 text-center py-8">Aucune suggestion pour &quot;{query}&quot;</p>
       </div>
     )
   }
-
+  {/* suggestion de rechercher associer*/}
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4">
+    <div className=" rounded-lg">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-medium flex items-center">
-          <TrendingUp className="h-5 w-5 text-purple-500 mr-2" />
+          <TrendingUp className="h-5 w-5 text-white mr-2" />
           Recherches associées
         </h2>
         <Search className="h-5 w-5 text-gray-400" />
@@ -308,9 +308,9 @@ export function RelatedSearches({ query }: { query: string }) {
           <Link
             href={`/search?q=${encodeURIComponent(search)}`}
             key={index}
-            className="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-purple-100 rounded-full text-sm text-gray-700 hover:text-purple-700 transition-colors group"
+            className="inline-flex items-center px-3 py-1.5 bg-white/20 hover:bg-white/80 rounded-full text-sm text-white hover:text-purple-700 transition-colors group"
           >
-            <Tag className="h-3.5 w-3.5 mr-1.5 text-gray-400 group-hover:text-purple-500" />
+            <Tag className="h-3.5 w-3.5 mr-1.5 text-white/20 group-hover:text-purple-500" />
             {search}
           </Link>
         ))}
@@ -344,7 +344,7 @@ export function ImageGallery({ query }: { query: string }) {
     return (
       <div className="bg-white rounded-lg shadow-sm p-4">
         <h2 className="text-lg font-medium mb-4 flex items-center">
-          <ImageIcon className="h-5 w-5 text-purple-500 mr-2" />
+          <ImageIcon className="h-5 w-5 text-white mr-2" />
           Galerie d&apos;images
         </h2>
         <div className="grid grid-cols-2 gap-2">
@@ -360,19 +360,19 @@ export function ImageGallery({ query }: { query: string }) {
     return (
       <div className="bg-white rounded-lg shadow-sm p-4">
         <h2 className="text-lg font-medium mb-4 flex items-center">
-          <ImageIcon className="h-5 w-5 text-purple-500 mr-2" />
+          <ImageIcon className="h-5 w-5 text-white mr-2" />
           Galerie d&apos;images
         </h2>
         <p className="text-gray-500 text-center py-8">Aucune image trouvée pour &quot;{query}&quot;</p>
       </div>
     )
   }
-
+  {/*Suggestion de galerie d'emage : rounded-lg shadow-sm p-4 sticky top-24*/}
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 sticky top-24">
+    <div className=" rounded-lg sticky top-24">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-medium flex items-center">
-          <ImageIcon className="h-5 w-5 text-purple-500 mr-2" />
+          <ImageIcon className="h-5 w-5 text-white mr-2" />
           Galerie d&apos;images
         </h2>
         <Search className="h-5 w-5 text-gray-400" />
@@ -383,7 +383,7 @@ export function ImageGallery({ query }: { query: string }) {
           <Link
             href={image.url}
             key={image.id}
-            className="group relative aspect-square overflow-hidden rounded-md bg-gray-100"
+            className="group relative aspect-square overflow-hidden rounded-md bg-gray-100 border-2 border-blue-300"
           >
             <Image
               src={image.src || "/placeholder.svg"}
@@ -405,7 +405,7 @@ export function ImageGallery({ query }: { query: string }) {
       <div className="mt-4 text-center">
         <Link
           href={`/images?q=${encodeURIComponent(query)}`}
-          className="inline-flex items-center text-sm text-purple-600 hover:text-purple-800 transition-colors"
+          className="inline-flex items-center text-sm text-white hover:text-blue-300 transition-colors"
         >
           <span>Voir plus d&apos;images</span>
           <svg

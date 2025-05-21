@@ -45,7 +45,7 @@ export function MainContent({
     <main className="flex-grow flex flex-col items-center justify-center z-20 px-4 mt-4 md:mt-0">
       <div className="w-full max-w-3xl text-center mb-6">
         <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 drop-shadow-lg">
-          Trouvez les meilleurs produits et services
+        Mieux qu’un moteur de recherche : un flair d’IA local
         </h1>
         <p className="text-white text-lg md:text-xl opacity-90 drop-shadow-md">
           Recherchez parmi des millions de produits et services de qualité
@@ -98,7 +98,7 @@ export function MainContent({
       </div>
 
       <div className="mt-6 w-full max-w-3xl">
-        <CategoryButtons />
+        <CategoryButtons setQuery={setQuery} />
       </div>
     </main>
   )
