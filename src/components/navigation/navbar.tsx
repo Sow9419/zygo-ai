@@ -285,7 +285,7 @@ export function Navbar({ initialQuery = "" }: { initialQuery?: string }) {
         </div>
 
         {/* Menu dropdown */}
-        {menuOpen && <MenuDropdown menuRef={menuRef} setMenuOpen={setMenuOpen} isLoggedIn={isLoggedIn} />}
+        {menuOpen && <MenuDropdown menuRef={menuRef} setMenuOpen={setMenuOpen} />}
       </div>
     </header>
   )

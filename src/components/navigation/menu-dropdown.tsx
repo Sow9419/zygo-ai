@@ -3,14 +3,16 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Settings, LogOut, HelpCircle, Star } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
+import { AuthDialog } from "@/components/auth"
 
 interface MenuDropdownProps {
   menuRef: React.RefObject<HTMLDivElement | null> 
   setMenuOpen: (open: boolean) => void
-  isLoggedIn?: boolean
 }
 
-export function MenuDropdown({ menuRef, setMenuOpen, isLoggedIn = false }: MenuDropdownProps) {
+export function MenuDropdown({ menuRef, setMenuOpen }: MenuDropdownProps) {
+  const { isAuthenticated, user, logout } = useAuth();
   return (
     <div
       ref={menuRef}
@@ -20,9 +22,9 @@ export function MenuDropdown({ menuRef, setMenuOpen, isLoggedIn = false }: MenuD
         {/* En-tête avec informations utilisateur */}
         <div className="px-4 py-3 flex items-center space-x-3">
           <div className="relative h-10 w-10 rounded-full overflow-hidden bg-purple-100">
-            {isLoggedIn ? (
+            {isAuthenticated ? (
               <Image 
-                src="/placeholder.svg?height=40&width=40" 
+                src={user?.avatar || "/placeholder.svg?height=40&width=40"} 
                 alt="Photo de profil" 
                 fill 
                 className="object-cover"
@@ -35,10 +37,10 @@ export function MenuDropdown({ menuRef, setMenuOpen, isLoggedIn = false }: MenuD
           </div>
           <div className="flex-1">
             <div className="font-medium text-white/60">
-              {isLoggedIn ? "User name" : "Invité"}
+              {isAuthenticated ? user?.name || "Utilisateur" : "Invité"}
             </div>
             <div className="text-xs text-white/60">
-              {isLoggedIn ? "example@gmail.com" : "Non connecté"}
+              {isAuthenticated ? user?.email : "Non connecté"}
             </div>
           </div>
         </div>
@@ -77,23 +79,21 @@ export function MenuDropdown({ menuRef, setMenuOpen, isLoggedIn = false }: MenuD
         </Link>
         {/* Connexion ou Déconnexion */}
         <div className="px-4 py-3">
-          {isLoggedIn ? (
-            <Link
-              href="/logout"
-              className="flex items-center px-4 py-3 text-gray-700 hover:bg-purple-50 transition-colors"
-              onClick={() => setMenuOpen(false)}
+          {isAuthenticated ? (
+            <button
+              className="flex items-center px-4 py-3 text-white hover:bg-white/15 transition-colors w-full"
+              onClick={() => {
+                logout();
+                setMenuOpen(false);
+              }}
             >
-              <LogOut className="w-5 h-5 mr-3 text-gray-600" />
-              <span>Sign out</span>
-            </Link>
+              <LogOut className="w-5 h-5 mr-3 text-white" />
+              <span>Déconnexion</span>
+            </button>
           ) : (
-            <Link
-              href="/login"
-              className="flex items-center justify-center w-full bg-purple-600 hover:bg-purple-700 text-white py-1 px-4 rounded-lg transition-colors"
-              onClick={() => setMenuOpen(false)}
-            >
-              <span>Connexion</span>
-            </Link>
+            <div onClick={() => setMenuOpen(false)}>
+              <AuthDialog triggerClassName="flex items-center justify-center w-full bg-purple-600 hover:bg-purple-700 text-white py-1 px-4 rounded-lg transition-colors" />
+            </div>
           )}
         </div>
         </div>

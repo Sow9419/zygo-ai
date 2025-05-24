@@ -2,10 +2,13 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { AlignRight, X, LogIn, Grip } from "lucide-react"
+import { AlignRight, X, LogIn, Grip, LogOut } from "lucide-react"
 import { MenuDropdown } from "@/components/navigation/menu-dropdown"
 import ApplicationGallery from "./application-galery"
 import { useState, useEffect } from "react"
+import { AuthDialog } from "@/components/auth"
+import { useAuth } from "@/contexts/auth-context"
+import { Button } from "@/components/ui/button"
 interface HeaderProps {
   menuOpen: boolean
   setMenuOpen: (open: boolean) => void
@@ -74,13 +77,18 @@ export function Header({ menuOpen, setMenuOpen, menuRef, buttonRef, applicationR
 
         <div className="flex items-center space-x-4">
           <nav className="hidden md:flex items-center space-x-6">
-            <Link
-              href="/login"
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full transition-colors flex items-center"
-            >
-              <LogIn className="h-4 w-4 mr-1" />
-              <span>Connexion</span>
-            </Link>
+            {isMounted && useAuth().isAuthenticated ? (
+              <Button 
+                variant="outline" 
+                className="bg-transparent border-white/20 text-white hover:bg-white/20 hover:text-white px-4 py-2 rounded-full transition-colors flex items-center"
+                onClick={() => useAuth().logout()}
+              >
+                <LogOut className="h-4 w-4 mr-1" />
+                <span>Déconnexion</span>
+              </Button>
+            ) : (
+              <AuthDialog triggerClassName="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full transition-colors flex items-center" />
+            )}
           </nav>
           
           {/* Menu burger pour les écrans plus petits */}
