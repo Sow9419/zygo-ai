@@ -5,12 +5,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button"
 import { LoginForm } from "./login-form"
 import { RegisterForm } from "./register-form"
-import { ForgotPasswordForm } from "./forgot-password-form"
-import { VerifyOTPForm } from "./verify-otp-form"
-import { ResetPasswordForm } from "./reset-password-form"
 import { LogIn } from "lucide-react"
 
-export type AuthView = "login" | "register" | "forgot-password" | "verify-otp" | "reset-password"
+export type AuthView = "login" | "register"
 
 interface AuthDialogProps {
   triggerClassName?: string
@@ -31,10 +28,8 @@ export function AuthDialog({ triggerClassName, initialView = "login" }: AuthDial
   }
 
   const handleSuccess = () => {
-    // Fermer le dialogue après une action réussie si nécessaire
-    if (view === "reset-password") {
-      setOpen(false)
-    }
+    // Fermer le dialogue après une action réussie
+    setOpen(false)
   }
 
   return (
@@ -61,29 +56,6 @@ export function AuthDialog({ triggerClassName, initialView = "login" }: AuthDial
           />
         )}
 
-        {view === "forgot-password" && (
-          <ForgotPasswordForm 
-            onViewChange={handleViewChange} 
-            onEmailCapture={handleEmailCapture} 
-            onSuccess={handleSuccess} 
-          />
-        )}
-
-        {view === "verify-otp" && (
-          <VerifyOTPForm 
-            email={email} 
-            onViewChange={handleViewChange} 
-            onSuccess={handleSuccess} 
-          />
-        )}
-
-        {view === "reset-password" && (
-          <ResetPasswordForm 
-            email={email} 
-            onViewChange={handleViewChange} 
-            onSuccess={handleSuccess} 
-          />
-        )}
       </DialogContent>
     </Dialog>
   )

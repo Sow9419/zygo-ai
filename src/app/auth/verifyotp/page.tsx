@@ -21,9 +21,11 @@ interface VerifyOTPProps {
 }
 
 export default function verifyOTP({email, onSuccess}: VerifyOTPProps) {
-    const { verifyOTP } = useAuth()
+    const { verifyOTP, resendConfirmation } = useAuth()
     const [isLoading, setIsLoading] = useState(false)
-    const[error, setError] = useState<string | null>(null)
+    const [resendLoading, setResendLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [resendMessage, setResendMessage] = useState<string | null>(null)
     const form = useForm<VerifyOTPInputs>({
         resolver: zodResolver(verifyOTPSchema),
         defaultValues: {
@@ -42,9 +44,20 @@ export default function verifyOTP({email, onSuccess}: VerifyOTPProps) {
 } 
 
 const handleResendCode = async () => {
-    // Gérer l'envoi du code de vérification à nouveau
-    // Implémenter la logique pour renvoyer le code
-    // Pour l'instant, on revient simplement à l'écran précédent
+    // Utiliser la fonction resendConfirmation du contexte d'authentification
+    setResendLoading(true)
+    setResendMessage(null)
+    try {
+        const success = await resendConfirmation(email)
+        if (success) {
+            setResendMessage("Un nouveau code a été envoyé à votre adresse email")
+        }
+    } catch (error) {
+        console.error("Erreur lors du renvoi du code:", error)
+        setResendMessage("Erreur lors de l'envoi du code")
+    } finally {
+        setResendLoading(false)
+    }
 }
 const handleSignUp = () => {
     // Gérer la navigation vers la page d'inscription
@@ -124,6 +137,7 @@ return (
           />
           
           {error && <p className="text-sm text-red-500">{error}</p>}
+          {resendMessage && <p className="text-sm text-green-500">{resendMessage}</p>}
           <Button type="submit" disabled={isLoading} className="w-full">
               {isLoading ? (
                 <>
@@ -139,8 +153,16 @@ return (
               variant="link" 
               className="w-full" 
               onClick={handleResendCode}
+              disabled={resendLoading}
             >
-              Renvoyer le code
+              {resendLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Envoi en cours...
+                </>
+              ) : (
+                "Renvoyer le code"
+              )}
             </Button>
         </form>
       </Form>

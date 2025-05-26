@@ -17,8 +17,10 @@ const forgotPasswordSchema = z.object({
 type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>
 
 export default function ForgotPassword() {
-  const {forgotPassword, isLoading} = useAuth()
+  const {forgotPassword} = useAuth()
+  const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [success, setSuccess] = React.useState<boolean>(false)
   const form = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
@@ -28,16 +30,22 @@ export default function ForgotPassword() {
 
   const onSubmit = async (data: ForgotPasswordFormData) => {
     try {
+      setIsLoading(true)
       setError(null)
-      const success = await forgotPassword(data.email)
-      if (success) {
-        // Redirection ou message de succès
-        console.log('Email de réinitialisation envoyé')
+      setSuccess(false)
+      const result = await forgotPassword(data.email)
+      if (result) {
+        // Message de succès
+        setSuccess(true)
+        form.reset() // Réinitialiser le formulaire après succès
       } else {
-        setError('Erreur lors de l\'envoi de l\'email')
+        setError('Erreur lors de l\'envoi de l\'email de réinitialisation')
       }
-    } catch (err) {
-      setError('Une erreur est survenue')
+    } catch (err: any) {
+      console.error('Erreur de réinitialisation:', err)
+      setError(err?.message || 'Une erreur est survenue lors de la demande de réinitialisation')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -119,15 +127,25 @@ export default function ForgotPassword() {
           />
           
           {error && <p className="text-sm text-red-500">{error}</p>}
+          {success && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-sm text-green-600">
+                Un email de réinitialisation a été envoyé à votre adresse email. 
+                Veuillez vérifier votre boîte de réception et suivre les instructions.
+              </p>
+            </div>
+          )}
           <Button 
           type="submit"
           className="w-full" 
-          disabled={isLoading}>
+          disabled={isLoading || success}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Envoi...
                 </>
+              ) : success ? (
+                "Email envoyé"
               ) : (
                 "Envoyer le code"
               )}

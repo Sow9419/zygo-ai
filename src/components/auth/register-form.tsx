@@ -33,7 +33,7 @@ interface RegisterFormProps {
 }
 
 export function RegisterForm({ onViewChange, onSuccess }: RegisterFormProps) {
-  const { register, isLoading } = useAuth()
+  const { register, signInWithGoogle, isLoading } = useAuth()
   const [error, setError] = useState<string | null>(null)
 
   const form = useForm<RegisterFormValues>({
@@ -53,21 +53,15 @@ export function RegisterForm({ onViewChange, onSuccess }: RegisterFormProps) {
       onSuccess?.() // Appeler le callback de succès si fourni
     }
   }
-  const [googleMessage, setGoogleMessage] = useState<string | null>(null)
-   const handleGoogleLogin = async () => {
-    // isLoading is managed by useAuth hook, no need to set it manually
-    setGoogleMessage(null)
-    try {
-      // Simuler une connexion avec Google
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Ici, vous intégreriez l'authentification Google réelle
-      setGoogleMessage("Cette fonctionnalité sera bientôt disponible")
-    } catch (error) {
-      console.error("Erreur lors de la connexion avec Google:", error)
-      setGoogleMessage("Erreur lors de la connexion avec Google")
-    } finally {
-      // isLoading is managed by useAuth hook, no need to set it manually here
+  // Fonction de connexion avec Google intégrée à Supabase
+  const handleGoogleLogin = async () => {
+    setError(null)
+    const success = await signInWithGoogle()
+    
+    if (success) {
+      // La redirection se fera automatiquement vers Google OAuth
+      // puis vers notre callback après authentification
+      onSuccess?.()
     }
   }
 
@@ -121,7 +115,6 @@ export function RegisterForm({ onViewChange, onSuccess }: RegisterFormProps) {
               </div>
               
               {error && <p className="text-sm text-red-500">{error}</p>}
-              {googleMessage && <p className="text-sm text-blue-500">{googleMessage}</p>}
               <Button type="submit" className="bg-blue-500 text-white w-full">
                 {isLoading ? (
                   <>

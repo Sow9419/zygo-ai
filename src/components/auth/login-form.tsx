@@ -33,7 +33,7 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onViewChange, onSuccess, className }: LoginFormProps) {
-  const { login, isLoading } = useAuth()
+  const { login, signInWithGoogle, isLoading } = useAuth()
   const [error, setError] = useState<string | null>(null)
 
   const form = useForm<LoginFormValues>({
@@ -54,22 +54,15 @@ export function LoginForm({ onViewChange, onSuccess, className }: LoginFormProps
     }
   }
 
-  const [googleMessage, setGoogleMessage] = useState<string | null>(null)
-
+  // Fonction de connexion avec Google intégrée à Supabase
   const handleGoogleLogin = async () => {
-    // isLoading is managed by useAuth hook, no need to set it manually
-    setGoogleMessage(null)
-    try {
-      // Simuler une connexion avec Google
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Ici, vous intégreriez l'authentification Google réelle
-      setGoogleMessage("Cette fonctionnalité sera bientôt disponible")
-    } catch (error) {
-      console.error("Erreur lors de la connexion avec Google:", error)
-      setGoogleMessage("Erreur lors de la connexion avec Google")
-    } finally {
-      // isLoading is managed by useAuth hook, no need to set it manually here
+    setError(null)
+    const success = await signInWithGoogle()
+    
+    if (success) {
+      // La redirection se fera automatiquement vers Google OAuth
+      // puis vers notre callback après authentification
+      onSuccess?.()
     }
   }
 
@@ -120,7 +113,7 @@ export function LoginForm({ onViewChange, onSuccess, className }: LoginFormProps
                           type="button" 
                           variant="link" 
                           className="ml-auto inline-block text-sm underline-offset-4 hover:underline" 
-                          onClick={() => onViewChange("forgot-password")}
+                          onClick={() => window.location.href = '/auth/forgopassword'}
                         >
                           Forgot your password?
                         </Button>
@@ -142,7 +135,6 @@ export function LoginForm({ onViewChange, onSuccess, className }: LoginFormProps
               </div>
               
               {error && <p className="text-sm text-red-500">{error}</p>}
-               {googleMessage && <p className="text-sm text-blue-500">{googleMessage}</p>}
                
                <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
