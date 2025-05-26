@@ -1,5 +1,5 @@
 "use client"
-
+// mise à jour du fichier header.tsx
 import Image from "next/image"
 import Link from "next/link"
 import { AlignRight, X, LogIn, Grip, LogOut } from "lucide-react"
