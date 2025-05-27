@@ -56,7 +56,7 @@ export function Header({ menuOpen, setMenuOpen, menuRef, buttonRef, applicationR
   return (
     <header className={`fixed top-0 left-0 right-0 z-30 flex flex-col bg-gradient-to-b from-black/60 to-transparent ${hasScrolled ? 'backdrop-blur-lg' : ''}`}>
       {/* Top navigation */}
-      <div className="flex justify-between items-center mb-2 mt-4">
+      <div className="flex justify-between items-center mb-2 mt-4 px-5">
         <div className="flex items-center">
           <div className="flex items-center">
             <Link href="/" className="relative h-8 w-16 sm:w-20 md:w-22 lg:w-28 mr-2">

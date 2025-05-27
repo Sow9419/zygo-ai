@@ -138,9 +138,11 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Background Slider with animation effects */}
-      <BackgroundSlider />
+    <div className="min-h-screen flex flex-col relative overflow-auto scrollbar-hide">
+       {/* Background fixe - ne bouge pas avec le scroll */}
+       <div className="fixed inset-0 z-0">
+        <BackgroundSlider />
+      </div>
 
       {/* Header refactorisé */}
       <Header 
@@ -190,9 +192,9 @@ export default function Home() {
       />
 
       {/* Trending Section */}
-      <div className="relative z-20 mt-auto">
+        <div className="pt-4">
         <TrendingSection />
-      </div>
+        </div>
     </div>
   )
 }

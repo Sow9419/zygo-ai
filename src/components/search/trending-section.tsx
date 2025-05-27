@@ -4,7 +4,7 @@ import { ChevronRight, TrendingUp, Star } from "lucide-react"
 
 export function TrendingSection() {
   return (
-    <div className="w-full bg-black/40 backdrop-blur-md">
+    <div className="w-full h-auto bg-black/40 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 py-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
@@ -17,7 +17,7 @@ export function TrendingSection() {
           </Link>
         </div>
 
-        <div className="flex overflow-x-auto pb-4 gap-4 scrollbar-hide">
+        <div className="flex overflow-auto pb-4 gap-4 scrollbar-hide">
           <TrendingItem
             image="/placeholder.svg?height=120&width=160"
             title="Smartphones pliables"
