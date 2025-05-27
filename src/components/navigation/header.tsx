@@ -2,13 +2,14 @@
 // mise à jour du fichier header.tsx
 import Image from "next/image"
 import Link from "next/link"
-import { AlignRight, X, LogIn, Grip, LogOut } from "lucide-react"
+import { AlignRight, X, Grip, LogOut } from "lucide-react"
 import { MenuDropdown } from "@/components/navigation/menu-dropdown"
 import ApplicationGallery from "./application-galery"
 import { useState, useEffect } from "react"
 import { AuthDialog } from "@/components/auth"
 import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
+
 interface HeaderProps {
   menuOpen: boolean
   setMenuOpen: (open: boolean) => void
@@ -24,6 +25,9 @@ export function Header({ menuOpen, setMenuOpen, menuRef, buttonRef, applicationR
   const [isMounted, setIsMounted] = useState(false);
   // État pour suivre si l'utilisateur a défilé
   const [hasScrolled, setHasScrolled] = useState(false);
+  
+  // Appel du hook useAuth au niveau supérieur du composant
+  const { isAuthenticated, logout } = useAuth();
   
   // Effet pour marquer le composant comme monté après le rendu initial
   useEffect(() => {
@@ -77,11 +81,11 @@ export function Header({ menuOpen, setMenuOpen, menuRef, buttonRef, applicationR
 
         <div className="flex items-center space-x-4">
           <nav className="hidden md:flex items-center space-x-6">
-            {isMounted && useAuth().isAuthenticated ? (
+            {isMounted && isAuthenticated ? (
               <Button 
                 variant="outline" 
                 className="bg-transparent border-white/20 text-white hover:bg-white/20 hover:text-white px-4 py-2 rounded-full transition-colors flex items-center"
-                onClick={() => useAuth().logout()}
+                onClick={logout}
               >
                 <LogOut className="h-4 w-4 mr-1" />
                 <span>Déconnexion</span>
