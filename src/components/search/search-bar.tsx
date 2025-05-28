@@ -49,6 +49,7 @@ export function SearchBar({
             onFocus={() => {
               if (query.length > 0) setShowSuggestions(true)
             }}
+            onBlur={() => setShowSuggestions(false)}
             className="w-full h-16 pl-6 pr-36 rounded-full border-0 shadow-xl focus:outline-none focus:ring-2 focus:ring-purple-400 text-base bg-white/90 backdrop-blur-sm text-black"
             placeholder="Rechercher des produits et services..."
           />

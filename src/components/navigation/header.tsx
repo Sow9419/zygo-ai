@@ -81,18 +81,12 @@ export function Header({ menuOpen, setMenuOpen, menuRef, buttonRef, applicationR
 
         <div className="flex items-center space-x-4">
           <nav className="hidden md:flex items-center space-x-6">
-            {isMounted && isAuthenticated ? (
-              <Button 
-                variant="outline" 
-                className="bg-transparent border-white/20 text-white hover:bg-white/20 hover:text-white px-4 py-2 rounded-full transition-colors flex items-center"
-                onClick={logout}
-              >
-                <LogOut className="h-4 w-4 mr-1" />
-                <span>Déconnexion</span>
-              </Button>
-            ) : (
-              <AuthDialog triggerClassName="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full transition-colors flex items-center" />
+            {isMounted && !isAuthenticated && (
+              <AuthDialog
+              triggerClassName="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full transition-colors flex items-center" 
+              />
             )}
+
           </nav>
           
           {/* Menu burger pour les écrans plus petits */}

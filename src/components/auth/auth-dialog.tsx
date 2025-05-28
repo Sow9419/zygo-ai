@@ -37,7 +37,9 @@ export function AuthDialog({ triggerClassName, initialView = "login" }: AuthDial
       <DialogTrigger asChild>
         <Button className={triggerClassName} variant="default">
           <LogIn className="h-4 w-4 mr-2" />
+          <DialogTitle>
           Connexion
+          </DialogTitle>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md p-0 overflow-hidden">
