@@ -46,11 +46,19 @@ export function RegisterForm({ onViewChange, onSuccess }: RegisterFormProps) {
 
   const onSubmit = async (data: RegisterFormValues) => {
     setError(null)
-    const success = await register(data.email, data.password)
-    
-    if (success) {
-      form.reset()
-      onSuccess?.() // Appeler le callback de succès si fourni
+    try {
+      const success = await register(data.email, data.password)
+      
+      if (success) {
+        form.reset()
+        // Stocker l'email dans sessionStorage pour la page de vérification OTP
+        sessionStorage.setItem("verificationEmail", data.email)
+        // Redirection automatique vers la page de vérification OTP
+        window.location.href = "/auth/verifyotp"
+        onSuccess?.() // Appeler le callback de succès si fourni
+      }
+    } catch (error: any) {
+      setError(error.message || "Erreur lors de l'inscription")
     }
   }
   // Fonction de connexion avec Google intégrée à Supabase

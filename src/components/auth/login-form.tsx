@@ -46,11 +46,24 @@ export function LoginForm({ onViewChange, onSuccess, className }: LoginFormProps
 
   const onSubmit = async (data: LoginFormValues) => {
     setError(null)
-    const success = await login(data.email, data.password)
-    
-    if (success) {
-      form.reset()
-      onSuccess?.() // Appeler le callback de succès si fourni
+    try {
+      const success = await login(data.email, data.password)
+      
+      if (success) {
+        form.reset()
+        // Redirection automatique vers la page principale après connexion réussie
+        window.location.href = "/"
+        onSuccess?.() // Appeler le callback de succès si fourni
+      }
+    } catch (error: any) {
+      // Si l'erreur indique que l'email n'est pas vérifié, rediriger vers la page de vérification OTP
+      if (error.message && error.message.includes("Email not confirmed")) {
+        // Stocker l'email dans sessionStorage pour la page de vérification
+        sessionStorage.setItem("verificationEmail", data.email)
+        window.location.href = "/auth/verifyotp"
+      } else {
+        setError(error.message || "Erreur de connexion")
+      }
     }
   }
 

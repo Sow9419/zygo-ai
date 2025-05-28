@@ -35,9 +35,11 @@ export default function ForgotPassword() {
       setSuccess(false)
       const result = await forgotPassword(data.email)
       if (result) {
-        // Message de succès
+        // Message de succès avec instructions claires
         setSuccess(true)
         form.reset() // Réinitialiser le formulaire après succès
+        // Stocker l'email dans sessionStorage pour la page de réinitialisation
+        sessionStorage.setItem("resetPasswordEmail", data.email)
       } else {
         setError('Erreur lors de l\'envoi de l\'email de réinitialisation')
       }
@@ -129,9 +131,12 @@ export default function ForgotPassword() {
           {error && <p className="text-sm text-red-500">{error}</p>}
           {success && (
             <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-              <p className="text-sm text-green-600">
-                Un email de réinitialisation a été envoyé à votre adresse email. 
-                Veuillez vérifier votre boîte de réception et suivre les instructions.
+              <p className="text-sm text-green-600 font-medium">
+                Un email de réinitialisation a été envoyé à votre adresse email.
+              </p>
+              <p className="text-xs text-green-600 mt-1">
+                Veuillez vérifier votre boîte de réception et suivre les instructions pour réinitialiser votre mot de passe.
+                Le lien de réinitialisation est valide pendant 24 heures.
               </p>
             </div>
           )}

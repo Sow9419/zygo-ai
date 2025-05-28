@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Loader2 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 const verifyOTPSchema = z.object({
     otp: z.string().min(6, { message: "OTP must be at least 6 characters" }),
@@ -15,17 +15,22 @@ const verifyOTPSchema = z.object({
 
 type VerifyOTPInputs = z.infer<typeof verifyOTPSchema>
 
-interface VerifyOTPProps {
-    email: string
-    onSuccess: () => void
-}
-
-export default function verifyOTP({email, onSuccess}: VerifyOTPProps) {
+export default function VerifyOTP() {
     const { verifyOTP, resendConfirmation } = useAuth()
     const [isLoading, setIsLoading] = useState(false)
     const [resendLoading, setResendLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [resendMessage, setResendMessage] = useState<string | null>(null)
+    const [email, setEmail] = useState<string>("") 
+
+    // Récupérer l'email depuis sessionStorage
+    useEffect(() => {
+        const storedEmail = sessionStorage.getItem("verificationEmail")
+        if (storedEmail) {
+            setEmail(storedEmail)
+        }
+    }, [])
+
     const form = useForm<VerifyOTPInputs>({
         resolver: zodResolver(verifyOTPSchema),
         defaultValues: {
@@ -35,24 +40,45 @@ export default function verifyOTP({email, onSuccess}: VerifyOTPProps) {
 
     const onSubmit = async (data: VerifyOTPInputs) => {
         setError(null)
-        const success = await verifyOTP(email, data.otp)
+        setIsLoading(true)
+        try {
+            if (!email) {
+                setError("Email non trouvé. Veuillez retourner à la page d'inscription.")
+                setIsLoading(false)
+                return
+            }
 
-        if (success) {
-           // Passer à la vue de réinitialisation de mot de passe
-           onSuccess()
+            const success = await verifyOTP(email, data.otp)
+
+            if (success) {
+                // Redirection automatique vers la page principale après vérification réussie
+                window.location.href = "/"
+            } else {
+                setError("Code de vérification invalide. Veuillez réessayer.")
+            }
+        } catch (error: any) {
+            setError(error.message || "Erreur lors de la vérification du code")
+        } finally {
+            setIsLoading(false)
+        }
     }
-} 
 
 const handleResendCode = async () => {
     // Utiliser la fonction resendConfirmation du contexte d'authentification
     setResendLoading(true)
     setResendMessage(null)
     try {
+        if (!email) {
+            setError("Email non trouvé. Veuillez retourner à la page d'inscription.")
+            setResendLoading(false)
+            return
+        }
+
         const success = await resendConfirmation(email)
         if (success) {
             setResendMessage("Un nouveau code a été envoyé à votre adresse email")
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Erreur lors du renvoi du code:", error)
         setResendMessage("Erreur lors de l'envoi du code")
     } finally {
