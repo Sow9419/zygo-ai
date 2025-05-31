@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { MapPin, X, AlertTriangle } from "lucide-react"
+import { useLocationContext } from "@/contexts/location-context"
 
 interface LocationData {
   country: string
@@ -14,86 +15,54 @@ interface LocationData {
 }
 
 export function LocationBadge() {
-  const [locationData, setLocationData] = useState<LocationData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isEnabled, setIsEnabled] = useState(true)
+  const { locationData, setLocationData, isEnabled, setIsEnabled, isLoading, setIsLoading } = useLocationContext();
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Check if location services are enabled in localStorage
-    const storedPreference = localStorage.getItem("locationEnabled")
-    if (storedPreference !== null) {
-      setIsEnabled(storedPreference === "true")
-    }
-
-    // Only fetch if enabled
     if (isEnabled) {
       fetchLocation()
     } else {
       setIsLoading(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEnabled])
 
-  const fetchLocation = async () => {
+  // Définir fetchLocation comme une fonction normale (pas const)
+  async function fetchLocation() {
     setIsLoading(true)
     setError(null)
-
     try {
-      // Utiliser des données de secours en cas d'échec de l'API
-      const fallbackData: LocationData = {
+      const fallbackData = {
         country: "Localisation",
         city: "indisponible",
-        location: {
-          lat: 48.8566,
-          lon: 2.3522,
-        },
+        location: { lat: 48.8566, lon: 2.3522 },
         isFallback: true,
       }
-
       try {
-        // Appel à notre route API proxy
         const response = await fetch(`http://ip-api.com/json`)
-        console.log("-----> localisation data: " + response)
-      
-
-
         if (!response.ok) {
-          const errorText = await response.text()
-          console.error("Erreur API:", errorText)
           throw new Error(`Erreur HTTP: ${response.status}`)
         }
-
         const data = await response.json()
-
-        if (data.error) {
-          throw new Error(data.error)
-        }
-
+        if (data.error) throw new Error(data.error)
         setLocationData(data)
-        // Stocker les données de localisation dans localStorage pour les utiliser dans d'autres composants
         localStorage.setItem("locationData", JSON.stringify(data))
       } catch (apiError) {
-        console.warn("Utilisation des données de secours:", apiError)
         setLocationData(fallbackData)
-        // Stocker les données de secours dans localStorage
         localStorage.setItem("locationData", JSON.stringify(fallbackData))
       }
     } catch (err) {
-      console.error("Location fetch error:", err)
       setError("Erreur lors de la récupération de la localisation")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const toggleLocation = () => {
+  function toggleLocation() {
     const newState = !isEnabled
     setIsEnabled(newState)
     localStorage.setItem("locationEnabled", newState.toString())
-
-    if (newState) {
-      fetchLocation()
-    }
+    if (newState) fetchLocation()
   }
 
   if (!isEnabled) {

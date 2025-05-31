@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
+import { LocationProvider } from "@/contexts/location-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,9 +30,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-background font-sans antialiased light:bg-light-background`}
       >
         <AuthProvider>
-          <div className="relative flex min-h-screen flex-col">
-            <div className="flex-1">{children}</div>
-          </div>
+          <LocationProvider>
+            <div className="relative flex min-h-screen flex-col">
+              <div className="flex-1">{children}</div>
+            </div>
+          </LocationProvider>
         </AuthProvider>
       </body>
     </html>

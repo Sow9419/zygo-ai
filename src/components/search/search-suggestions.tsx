@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from "react"
 import { Search, TrendingUp, ArrowRight } from "lucide-react"
-import { GeocodingResult } from "@/lib/localisation/location-service"
+import { useLocationContext } from "@/contexts/location-context"
+
 interface SearchSuggestionsProps {
   query: string
   onSuggestionClick: (suggestion: string) => void
 }
 
 // Mock function to generate product suggestions based on query
-function generateSuggestions(query: string): string[] {
+function generateSuggestions(query: string, locationData?: { city?: string; country?: string }): string[] {
   if (!query) return []
 
   const baseProducts = [
@@ -65,35 +66,21 @@ function generateSuggestions(query: string): string[] {
     ...matchingProducts,
     ...matchingServices,
     ...matchingProducts.map((p) => `${p} pas cher`),
-    // Localisation - Récupérer les données de localisation depuis localStorage
     ...(() => {
-      try {
-        const locationEnabled = localStorage.getItem("locationEnabled") === "true";
-        if (locationEnabled) {
-          // Tenter de récupérer les données de localisation
-          const locationData = localStorage.getItem("locationData");
-          if (locationData) {
-            const { city, country } = JSON.parse(locationData);
-            if (city && country) {
-              return [
-                ...matchingProducts.map((p) => `${p} à ${city}`),
-                ...matchingProducts.map((p) => `${p} en ${country}`),
-                ...matchingServices.map((s) => `${s} à ${city}`),
-                ...matchingServices.map((s) => `${s} en ${country}`)
-              ];
-            }
-          }
-        }
-        // Si la localisation n'est pas disponible, utiliser Paris, France par défaut
+      if (locationData && locationData.city && locationData.country) {
+        return [
+          ...matchingProducts.map((p) => `${p} à ${locationData.city}`),
+          ...matchingProducts.map((p) => `${p} en ${locationData.country}`),
+          ...matchingServices.map((s) => `${s} à ${locationData.city}`),
+          ...matchingServices.map((s) => `${s} en ${locationData.country}`)
+        ];
+      } else {
         return [
           ...matchingProducts.map((p) => `${p} à proximité`),
           ...matchingProducts.map((p) => `${p} dans la région`),
           ...matchingServices.map((s) => `${s} à Proximité`),
           ...matchingServices.map((s) => `${s} dans la région`)
         ];
-      } catch (error) {
-        console.error("Erreur lors de la récupération de la localisation:", error);
-        return [];
       }
     })(),
     ...matchingProducts.map((p) => `meilleur ${p}`),
@@ -118,13 +105,14 @@ function generateSuggestions(query: string): string[] {
 export function SearchSuggestions({ query, onSuggestionClick }: SearchSuggestionsProps) {
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const { locationData } = useLocationContext();
 
   useEffect(() => {
     if (query.length > 0) {
       setLoading(true)
       // Simulate API call delay
       const timer = setTimeout(() => {
-        setSuggestions(generateSuggestions(query))
+        setSuggestions(generateSuggestions(query, locationData ?? undefined))
         setLoading(false)
       }, 200)
 
@@ -132,7 +120,7 @@ export function SearchSuggestions({ query, onSuggestionClick }: SearchSuggestion
     } else {
       setSuggestions([])
     }
-  }, [query])
+  }, [query, locationData])
 
   if (loading) {
     return <div className="p-4 text-center text-gray-500">Chargement des suggestions...</div>
