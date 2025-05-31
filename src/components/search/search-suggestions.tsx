@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Search, TrendingUp, ArrowRight } from "lucide-react"
-
+import { GeocodingResult } from "@/lib/localisation/location-service"
 interface SearchSuggestionsProps {
   query: string
   onSuggestionClick: (suggestion: string) => void
@@ -65,6 +65,37 @@ function generateSuggestions(query: string): string[] {
     ...matchingProducts,
     ...matchingServices,
     ...matchingProducts.map((p) => `${p} pas cher`),
+    // Localisation - Récupérer les données de localisation depuis localStorage
+    ...(() => {
+      try {
+        const locationEnabled = localStorage.getItem("locationEnabled") === "true";
+        if (locationEnabled) {
+          // Tenter de récupérer les données de localisation
+          const locationData = localStorage.getItem("locationData");
+          if (locationData) {
+            const { city, country } = JSON.parse(locationData);
+            if (city && country) {
+              return [
+                ...matchingProducts.map((p) => `${p} à ${city}`),
+                ...matchingProducts.map((p) => `${p} en ${country}`),
+                ...matchingServices.map((s) => `${s} à ${city}`),
+                ...matchingServices.map((s) => `${s} en ${country}`)
+              ];
+            }
+          }
+        }
+        // Si la localisation n'est pas disponible, utiliser Paris, France par défaut
+        return [
+          ...matchingProducts.map((p) => `${p} à proximité`),
+          ...matchingProducts.map((p) => `${p} dans la région`),
+          ...matchingServices.map((s) => `${s} à Proximité`),
+          ...matchingServices.map((s) => `${s} dans la région`)
+        ];
+      } catch (error) {
+        console.error("Erreur lors de la récupération de la localisation:", error);
+        return [];
+      }
+    })(),
     ...matchingProducts.map((p) => `meilleur ${p}`),
     ...matchingProducts.map((p) => `${p} professionnel`),
     ...matchingServices.map((s) => `service de ${s}`),
