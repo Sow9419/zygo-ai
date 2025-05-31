@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { SearchBar } from "@/components/search/search-bar"
 import { SearchSuggestions } from "@/components/search/search-suggestions"
 import { CategoryButtons } from "@/components/search/category-buttons"
+import { useState, useRef } from "react"
 
 interface MainContentProps {
   query: string
@@ -31,7 +32,6 @@ export function MainContent({
   suggestionsRef,
   isRecording,
   setIsRecording,
-  handleVoiceSearch,
   handleImageSearch,
   handleSearch,
   clearSearch,
@@ -40,6 +40,28 @@ export function MainContent({
   handleSuggestionClick
 }: MainContentProps) {
   const router = useRouter()
+
+  // Ajout de la fonction de recherche vocale qui ne fait que remplir l'input
+  const handleVoiceSearch = () => {
+    if (!('webkitSpeechRecognition' in window)) {
+      alert("La reconnaissance vocale n'est pas prise en charge par votre navigateur.");
+      return;
+    }
+    setIsRecording(true);
+    // @ts-expect-error
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = "fr-FR";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setQuery(transcript); // Remplit juste l'input, pas d'envoi automatique
+      setIsRecording(false);
+    };
+    recognition.onerror = () => setIsRecording(false);
+    recognition.onend = () => setIsRecording(false);
+    recognition.start();
+  }
 
   return (
     <main className="flex-grow flex flex-col items-center justify-center z-20 px-4 mt-4 md:mt-0">

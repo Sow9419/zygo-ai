@@ -116,43 +116,28 @@ export function Navbar({ initialQuery = "" }: { initialQuery?: string }) {
   // Fonction pour gérer la recherche vocale
   const handleVoiceSearch = () => {
     // Vérifier si la reconnaissance vocale est supportée
-    if (!("webkitSpeechRecognition" in window)) {
+    if (!('webkitSpeechRecognition' in window)) {
       alert("La reconnaissance vocale n'est pas prise en charge par votre navigateur.")
       return
     }
 
-    setIsRecording(!isRecording)
+    setIsRecording(true)
 
-    // Initialiser la reconnaissance vocale
     // @ts-expect-error - SpeechRecognition n'est pas encore dans les types TypeScript standards
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)()
-    recognition.lang = "fr-FR" // Langue française
-    recognition.interimResults = false // Pas de résultats intermédiaires
-    recognition.maxAlternatives = 1 // Une seule alternative
+    recognition.lang = "fr-FR"
+    recognition.interimResults = false
+    recognition.maxAlternatives = 1
 
-    // Gérer le résultat de la reconnaissance
-    recognition.onresult = (event: { results: { transcript: string }[][] }) => {
+    recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript
       setQuery(transcript)
       setIsRecording(false)
-
-      // Soumettre automatiquement la recherche après une courte pause
-      setTimeout(() => {
-        router.push(`/search?q=${encodeURIComponent(transcript)}`)
-      }, 500)
+      // Ne surtout pas router.push ici !
+      // L'utilisateur doit valider manuellement
     }
-
-    // Gérer les erreurs de reconnaissance
-    recognition.onerror = () => {
-      setIsRecording(false)
-    }
-
-    // Gérer la fin de la reconnaissance
-    recognition.onend = () => {
-      setIsRecording(false)
-    }
-
-    // Démarrer la reconnaissance vocale
+    recognition.onerror = () => setIsRecording(false)
+    recognition.onend = () => setIsRecording(false)
     recognition.start()
   }
 

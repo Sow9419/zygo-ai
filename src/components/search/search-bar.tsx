@@ -52,6 +52,12 @@ export function SearchBar({
             onBlur={() => setShowSuggestions(false)}
             className="w-full h-16 pl-6 pr-36 rounded-full border-0 shadow-xl focus:outline-none focus:ring-2 focus:ring-purple-400 text-base bg-white/90 backdrop-blur-sm text-black"
             placeholder="Rechercher des produits et services..."
+            onInput={(e) => {
+              // Si la valeur change via setQuery (par exemple via la voix), suggestions s'affichent
+              if ((e.target as HTMLInputElement).value.length > 0) {
+                setShowSuggestions(true)
+              }
+            }}
           />
         </div>
         <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
