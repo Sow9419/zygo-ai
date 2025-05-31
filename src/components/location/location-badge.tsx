@@ -70,9 +70,13 @@ export function LocationBadge() {
         }
 
         setLocationData(data)
+        // Stocker les données de localisation dans localStorage pour les utiliser dans d'autres composants
+        localStorage.setItem("locationData", JSON.stringify(data))
       } catch (apiError) {
         console.warn("Utilisation des données de secours:", apiError)
         setLocationData(fallbackData)
+        // Stocker les données de secours dans localStorage
+        localStorage.setItem("locationData", JSON.stringify(fallbackData))
       }
     } catch (err) {
       console.error("Location fetch error:", err)
