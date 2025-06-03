@@ -161,7 +161,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   );
 };
 
-const ProductResultats: React.FC = () => {
+const SearchResultats: React.FC = () => {
   if (!productsData || productsData.length === 0) {
     return <p className="text-center text-gray-500">Aucun produit à afficher.</p>;
   }
@@ -177,4 +177,4 @@ const ProductResultats: React.FC = () => {
   );
 };
 
-export default ProductResultats;
+export default SearchResultats;

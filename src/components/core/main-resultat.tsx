@@ -1,7 +1,7 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
-import ProductResultats from "./product-resultats"
+import SearchResultats from "./card-searchresultats"
 import { ImageGallery, RelatedSearches } from "@/components/search/resultats-suggestion"
 import { motion } from "framer-motion"
 
@@ -32,7 +32,7 @@ export default function Resultats() {
                         <div className="lg:col-span-3 space-y-6">
                             <div className="bg-white/20 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-white/10">
                             <p className="text-white text-lg font-semibold">Résultats trouvée : <span className="text-white/80 font-normal">{query}</span></p>
-                                <ProductResultats />
+                                <SearchResultats />
                             </div>
                         </div>
                         
