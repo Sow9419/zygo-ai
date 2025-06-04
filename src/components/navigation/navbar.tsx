@@ -2,13 +2,49 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useContext } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Menu, X, Search, Mic, Camera } from "lucide-react"
 import { MenuDropdown } from "./menu-dropdown"
 import { SearchSuggestions } from "../search/search-suggestions"
+import { LocationContext } from "@/contexts/location-context"
+import { AuthContext } from "@/contexts/auth-context"
+import { createSearchInput, InputType, createImageSearchInput } from "@/lib/searchs-ervice/search-input"
+import { search } from "@/lib/searchs-ervice/search-service"
+
+// Interface pour la reconnaissance vocale
+interface SpeechRecognitionEvent {
+  results: {
+    [key: number]: {
+      [key: number]: {
+        transcript: string
+      }
+    }
+  }
+}
+
+interface SpeechRecognition extends EventTarget {
+  lang: string
+  interimResults: boolean
+  maxAlternatives: number
+  onresult: ((event: SpeechRecognitionEvent) => void) | null
+  onerror: (() => void) | null
+  onend: (() => void) | null
+  start: () => void
+}
+
+interface SpeechRecognitionConstructor {
+  new (): SpeechRecognition
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor
+    webkitSpeechRecognition?: SpeechRecognitionConstructor
+  }
+}
 
 export function Navbar({ initialQuery = "" }: { initialQuery?: string }) {
   // États pour gérer l'interface utilisateur
@@ -27,6 +63,13 @@ export function Navbar({ initialQuery = "" }: { initialQuery?: string }) {
   const inputRef = useRef<HTMLInputElement>(null) // Référence pour l'input de recherche
   const suggestionsRef = useRef<HTMLDivElement>(null) // Référence pour les suggestions
   const fileInputRef = useRef<HTMLInputElement>(null) // Référence pour l'input de fichier image
+  
+  // Contextes
+  const locationContext = useContext(LocationContext)
+  const authContext = useContext(AuthContext)
+  
+  // Données de localisation
+  const locationData = locationContext?.locationData || null
   
   // Effet pour détecter le défilement de la page et modifier l'apparence du header
   useEffect(() => {
@@ -87,12 +130,30 @@ export function Navbar({ initialQuery = "" }: { initialQuery?: string }) {
   }, []);
 
   // Fonction pour gérer la soumission du formulaire de recherche
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
     if (query.trim()) {
-      // Naviguer vers la page de résultats avec la requête encodée
-      router.push(`/search?q=${encodeURIComponent(query)}`)
-      setShowSuggestions(false)
+      try {
+        // Créer un objet SearchInput
+        const searchInput = await createSearchInput(
+          query.trim(),
+          InputType.TEXT,
+          locationData,
+          null
+        )
+
+        // Effectuer la recherche via le service
+        await search(searchInput)
+
+        // Rediriger vers la page de résultats avec l'ID de requête
+        router.push(`/search?q=${encodeURIComponent(query.trim())}&requestId=${searchInput.requestId}`)
+        setShowSuggestions(false)
+      } catch (error) {
+        console.error('Erreur lors de la recherche:', error)
+        // En cas d'erreur, utiliser la redirection classique
+        router.push(`/search?q=${encodeURIComponent(query.trim())}`)
+        setShowSuggestions(false)
+      }
     }
   }
 
@@ -116,25 +177,52 @@ export function Navbar({ initialQuery = "" }: { initialQuery?: string }) {
   // Fonction pour gérer la recherche vocale
   const handleVoiceSearch = () => {
     // Vérifier si la reconnaissance vocale est supportée
-    if (!('webkitSpeechRecognition' in window)) {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       alert("La reconnaissance vocale n'est pas prise en charge par votre navigateur.")
       return
     }
 
     setIsRecording(true)
 
-    // @ts-expect-error - SpeechRecognition n'est pas encore dans les types TypeScript standards
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)()
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognitionAPI) {
+      alert("La reconnaissance vocale n'est pas prise en charge par votre navigateur.")
+      setIsRecording(false)
+      return
+    }
+
+    const recognition = new SpeechRecognitionAPI()
     recognition.lang = "fr-FR"
     recognition.interimResults = false
     recognition.maxAlternatives = 1
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = async (event: SpeechRecognitionEvent) => {
       const transcript = event.results[0][0].transcript
       setQuery(transcript)
       setIsRecording(false)
-      // Ne surtout pas router.push ici !
-      // L'utilisateur doit valider manuellement
+      
+      // Soumettre automatiquement la recherche vocale
+      if (transcript.trim()) {
+        try {
+          // Créer un objet SearchInput pour la recherche vocale
+          const searchInput = await createSearchInput(
+            transcript.trim(),
+            InputType.VOICE,
+            locationData,
+            null
+          )
+
+          // Effectuer la recherche via le service
+          await search(searchInput)
+
+          // Rediriger vers la page de résultats avec l'ID de requête
+          router.push(`/search?q=${encodeURIComponent(transcript.trim())}&requestId=${searchInput.requestId}`);
+        } catch (error) {
+          console.error('Erreur lors de la recherche vocale:', error)
+          // En cas d'erreur, utiliser la redirection classique
+          router.push(`/search?q=${encodeURIComponent(transcript.trim())}`);
+        }
+      }
     }
     recognition.onerror = () => setIsRecording(false)
     recognition.onend = () => setIsRecording(false)
@@ -149,16 +237,34 @@ export function Navbar({ initialQuery = "" }: { initialQuery?: string }) {
   }
 
   // Fonction pour gérer l'upload d'image
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Simulation d'une recherche par image
-      // Dans une vraie application, l'image serait envoyée à un service d'analyse d'images
-      setQuery("Recherche par image similaire à " + file.name)
+      try {
+        // Créer un objet SearchInput pour la recherche par image
+        const searchInput = await createImageSearchInput(
+          file,
+          locationData
+        )
 
-      // Réinitialiser l'input file pour permettre la sélection du même fichier
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
+        // Mettre à jour le texte de recherche dans l'interface
+        setQuery(searchInput.query)
+
+        // Effectuer la recherche via le service
+        await search(searchInput)
+
+        // Rediriger vers la page de résultats avec l'ID de requête
+        router.push(`/search?q=${encodeURIComponent(searchInput.query)}&requestId=${searchInput.requestId}`)
+      } catch (error) {
+        console.error('Erreur lors de la recherche par image:', error)
+        // En cas d'erreur, utiliser une approche simplifiée
+        setQuery("Recherche par image similaire à " + file.name)
+        router.push(`/search?q=${encodeURIComponent("Recherche par image similaire à " + file.name)}`)
+      } finally {
+        // Réinitialiser l'input file pour permettre la sélection du même fichier
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""
+        }
       }
     }
   }

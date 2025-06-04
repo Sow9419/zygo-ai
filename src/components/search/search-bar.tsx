@@ -1,8 +1,12 @@
 "use client"
 
+import React, { useContext } from "react"
 import { X, Search, Mic, Camera } from "lucide-react"
+import { LocationContext } from "@/contexts/location-context"
+import { createSearchInput, InputType, createImageSearchInput } from "@/lib/searchs-ervice/search-input"
+import { search } from "@/lib/searchs-ervice/search-service"
 
-interface SearchBarProps {
+export interface SearchBarProps {
   query: string
   setQuery: (query: string) => void
   showSuggestions: boolean
@@ -10,6 +14,7 @@ interface SearchBarProps {
   suggestionsRef: React.RefObject<HTMLDivElement>
   isRecording: boolean
   setIsRecording: (isRecording: boolean) => void
+  router?: any // Pour la navigation
   handleVoiceSearch: () => void
   handleImageSearch: () => void
   handleSearch: (e: React.FormEvent) => void
@@ -28,10 +33,43 @@ export function SearchBar({
   handleSearch,
   clearSearch,
   fileInputRef,
-  handleImageUpload
+  handleImageUpload,
+  router
 }: SearchBarProps) {
+  // Contexte de localisation
+  const locationContext = useContext(LocationContext)
+  const locationData = locationContext?.locationData || null
+  
+  // Fonction pour gérer la recherche avec notre nouveau service
+  const handleSearchWithService = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (query.trim() && router) {
+      try {
+        // Créer un objet SearchInput
+        const searchInput = await createSearchInput(
+          query.trim(),
+          InputType.TEXT,
+          locationData,
+          null
+        )
+
+        // Effectuer la recherche via le service
+        await search(searchInput)
+
+        // Rediriger vers la page de résultats avec l'ID de requête
+        router.push(`/search?q=${encodeURIComponent(query.trim())}&requestId=${searchInput.requestId}`)
+      } catch (error) {
+        console.error('Erreur lors de la recherche:', error)
+        // Utiliser la fonction de recherche fournie en props en cas d'erreur
+        handleSearch(e)
+      }
+    } else {
+      // Utiliser la fonction de recherche fournie en props si pas de router
+      handleSearch(e)
+    }
+  }
   return (
-    <form onSubmit={handleSearch} className="w-full">
+    <form onSubmit={router ? handleSearchWithService : handleSearch} className="w-full">
       <div className="relative w-full flex items-center">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full opacity-20 animate-pulse"></div>
         <div className="w-full relative">
