@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { SearchResult } from "@/hooks/use-search"
 import { Button } from "@/components/ui/button"
-import { Grid2X2, List, MapPin, ArrowUpDown } from "lucide-react"
+import { Grid2X2, List } from "lucide-react" // Removed MapPin, ArrowUpDown
 
 export type ViewMode = "grid" | "list"
 export type SortOption = "relevance" | "proximity" | "price_asc" | "price_desc" | "rating"
@@ -39,17 +39,14 @@ export function RenderStrategy({ results, totalResults, onViewModeChange, childr
   const endIndex = startIndex + itemsPerPage
   
   // Trier les résultats en fonction de l'option de tri
-  const sortResults = (results: SearchResult[]): SearchResult[] => {
-    const sortedResults = [...results]
+  const sortResults = (resultsToSort: SearchResult[]): SearchResult[] => { // Renamed 'results' to 'resultsToSort' to avoid conflict with props
+    const sortedResults = [...resultsToSort]; // Use the function parameter
     
     switch (sortOption) {
       case "proximity":
         // Tri par proximité (simulation)
-        return sortedResults.sort((a, b) => {
-          // Ici, on pourrait utiliser des coordonnées réelles pour calculer la distance
-          // Pour l'instant, on utilise un tri aléatoire pour simuler
-          return Math.random() - 0.5
-        })
+        // Removed unused variables a and b. The random sort is kept for simulation.
+        return sortedResults.sort(() => Math.random() - 0.5);
       case "price_asc":
         // Tri par prix croissant
         return sortedResults.sort((a, b) => {
@@ -79,10 +76,10 @@ export function RenderStrategy({ results, totalResults, onViewModeChange, childr
   }
   
   // Appliquer le tri et la pagination
-  const displayedResults = sortResults(results).slice(startIndex, endIndex)
+  const displayedResults = sortResults(results).slice(startIndex, endIndex) // Prop 'results' is correctly used here
   
   // Calculer le nombre total de pages
-  const totalPages = Math.ceil(results.length / itemsPerPage)
+  const totalPages = Math.ceil(results.length / itemsPerPage) // Prop 'results' is correctly used here
   
   // Fonction pour changer de page
   const handlePageChange = (page: number) => {

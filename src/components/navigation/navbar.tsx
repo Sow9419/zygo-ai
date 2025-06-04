@@ -1,44 +1,44 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useRef, useEffect, useContext } from "react"
+import { useState, useRef, useEffect } from "react" // Removed useContext
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Menu, X, Search, Mic, Camera } from "lucide-react"
 import { MenuDropdown } from "./menu-dropdown"
 import { SearchSuggestions } from "../search/search-suggestions"
-import { LocationContext } from "@/contexts/location-context"
-import { AuthContext } from "@/contexts/auth-context"
-import { createSearchInput, InputType, createImageSearchInput } from "@/lib/searchs-ervice/search-input"
+import { useLocationContext, type LocationData as ContextLocationData } from "@/contexts/location-context"
+import { useAuth } from "@/contexts/auth-context"
+import { createSearchInput, InputType, createImageSearchInput, type LocationData as SearchLocationData } from "@/lib/searchs-ervice/search-input"
 import { search } from "@/lib/searchs-ervice/search-service"
 
-// Interface pour la reconnaissance vocale
-interface SpeechRecognitionEvent {
+// Corrected SpeechRecognition interfaces (ensure they are exported)
+export interface SpeechRecognitionEvent {
   results: {
     [key: number]: {
       [key: number]: {
-        transcript: string
-      }
-    }
-  }
+        transcript: string;
+      };
+    };
+  };
 }
 
-interface SpeechRecognition extends EventTarget {
-  lang: string
-  interimResults: boolean
-  maxAlternatives: number
-  onresult: ((event: SpeechRecognitionEvent) => void) | null
-  onerror: (() => void) | null
-  onend: (() => void) | null
-  start: () => void
+export interface SpeechRecognition extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
 }
 
-interface SpeechRecognitionConstructor {
-  new (): SpeechRecognition
+export interface SpeechRecognitionConstructor {
+  new (): SpeechRecognition;
 }
 
+// Global declaration for window.SpeechRecognition etc.
 declare global {
   interface Window {
     SpeechRecognition?: SpeechRecognitionConstructor
@@ -46,31 +46,40 @@ declare global {
   }
 }
 
+// Helper function to transform LocationData from context to search service format
+function transformLocationData(contextLocationData: ContextLocationData | null): SearchLocationData | null {
+  if (!contextLocationData) return null;
+  return {
+    country: contextLocationData.country,
+    city: contextLocationData.city,
+    lat: contextLocationData.location?.lat,
+    lon: contextLocationData.location?.lon,
+    isFallback: contextLocationData.isFallback,
+  };
+}
+
+
 export function Navbar({ initialQuery = "" }: { initialQuery?: string }) {
-  // États pour gérer l'interface utilisateur
-  const [menuOpen, setMenuOpen] = useState(false) // État d'ouverture/fermeture du menu
-  const [query, setQuery] = useState(initialQuery) // Valeur actuelle de la recherche
-  const [showSuggestions, setShowSuggestions] = useState(false) // Affichage des suggestions de recherche
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [query, setQuery] = useState(initialQuery)
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [isFocused, setIsFocused] = useState(false) // État de focus sur la barre de recherche
   const [isRecording, setIsRecording] = useState(false) // État d'enregistrement vocal
   const [scrolled, setScrolled] = useState(false) // État de défilement de la page
 
   // Hook de navigation Next.js
   const router = useRouter()
+  const menuRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
-  // Références pour les éléments DOM
-  const menuRef = useRef<HTMLDivElement>(null) // Référence pour le menu dropdown
-  const inputRef = useRef<HTMLInputElement>(null) // Référence pour l'input de recherche
-  const suggestionsRef = useRef<HTMLDivElement>(null) // Référence pour les suggestions
-  const fileInputRef = useRef<HTMLInputElement>(null) // Référence pour l'input de fichier image
+  const locationContextHook = useLocationContext();
+  const { user } = useAuth();
   
-  // Contextes
-  const locationContext = useContext(LocationContext)
-  const authContext = useContext(AuthContext)
-  
-  // Données de localisation
-  const locationData = locationContext?.locationData || null
-  
+  // Données de localisation transformées
+  const searchServiceLocationData = transformLocationData(locationContextHook?.locationData || null);
+
   // Effet pour détecter le défilement de la page et modifier l'apparence du header
   useEffect(() => {
     const handleScroll = () => {
@@ -138,10 +147,10 @@ export function Navbar({ initialQuery = "" }: { initialQuery?: string }) {
         const searchInput = await createSearchInput(
           query.trim(),
           InputType.TEXT,
-          locationData,
-          null
-        )
-
+          searchServiceLocationData,
+          null,
+          user?.id
+        );
         // Effectuer la recherche via le service
         await search(searchInput)
 
@@ -208,10 +217,10 @@ export function Navbar({ initialQuery = "" }: { initialQuery?: string }) {
           const searchInput = await createSearchInput(
             transcript.trim(),
             InputType.VOICE,
-            locationData,
-            null
-          )
-
+            searchServiceLocationData,
+            null,
+            user?.id
+          );
           // Effectuer la recherche via le service
           await search(searchInput)
 
@@ -244,9 +253,9 @@ export function Navbar({ initialQuery = "" }: { initialQuery?: string }) {
         // Créer un objet SearchInput pour la recherche par image
         const searchInput = await createImageSearchInput(
           file,
-          locationData
-        )
-
+          searchServiceLocationData,
+          user?.id
+        );
         // Mettre à jour le texte de recherche dans l'interface
         setQuery(searchInput.query)
 

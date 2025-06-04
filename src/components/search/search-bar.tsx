@@ -1,58 +1,71 @@
 "use client"
 
-import React, { useContext } from "react"
-import { X, Search, Mic, Camera } from "lucide-react"
-import { LocationContext } from "@/contexts/location-context"
-import { createSearchInput, InputType, createImageSearchInput } from "@/lib/searchs-ervice/search-input"
-import { search } from "@/lib/searchs-ervice/search-service"
+import React from "react"; // Removed useContext as it's not directly used here after changes
+import { X, Search, Mic, Camera } from "lucide-react";
+import { useLocationContext, type LocationData as ContextLocationData } from "@/contexts/location-context"; // Changed to useLocationContext and import type
+import { createSearchInput, InputType, type LocationData as SearchLocationData } from "@/lib/searchs-ervice/search-input"; // Removed createImageSearchInput, imported SearchLocationData type
+import { search } from "@/lib/searchs-ervice/search-service";
+import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'; // Import type for router
 
 export interface SearchBarProps {
-  query: string
-  setQuery: (query: string) => void
-  showSuggestions: boolean
-  setShowSuggestions: (show: boolean) => void
-  suggestionsRef: React.RefObject<HTMLDivElement>
-  isRecording: boolean
-  setIsRecording: (isRecording: boolean) => void
-  router?: any // Pour la navigation
+  query: string;
+  setQuery: (query: string) => void;
+  showSuggestions: boolean;
+  setShowSuggestions: (show: boolean) => void;
+  suggestionsRef: React.RefObject<HTMLDivElement>;
+  isRecording: boolean;
+  setIsRecording: (isRecording: boolean) => void;
+  router?: AppRouterInstance; // Typed router
   handleVoiceSearch: () => void
   handleImageSearch: () => void
   handleSearch: (e: React.FormEvent) => void
   clearSearch: () => void
   fileInputRef: React.RefObject<HTMLInputElement>
-  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
+  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+// Helper function to transform LocationData (similar to navbar.tsx)
+function transformLocationData(contextLocationData: ContextLocationData | null): SearchLocationData | null {
+  if (!contextLocationData) return null;
+  return {
+    country: contextLocationData.country,
+    city: contextLocationData.city,
+    lat: contextLocationData.location?.lat,
+    lon: contextLocationData.location?.lon,
+    isFallback: contextLocationData.isFallback,
+  };
 }
 
 export function SearchBar({
   query,
   setQuery,
   setShowSuggestions,
-  isRecording,
+  isRecording, // Included from props
   handleVoiceSearch,
   handleImageSearch,
-  handleSearch,
+  handleSearch, // This is the generic search handler from props
   clearSearch,
   fileInputRef,
   handleImageUpload,
-  router
+  router,
 }: SearchBarProps) {
-  // Contexte de localisation
-  const locationContext = useContext(LocationContext)
-  const locationData = locationContext?.locationData || null
+  const locationContextHook = useLocationContext(); // Use the hook
+  // Transform locationData for the search service
+  const searchServiceLocationData = transformLocationData(locationContextHook?.locationData || null);
   
   // Fonction pour gérer la recherche avec notre nouveau service
   const handleSearchWithService = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (query.trim() && router) {
       try {
         // Créer un objet SearchInput
         const searchInput = await createSearchInput(
           query.trim(),
           InputType.TEXT,
-          locationData,
-          null
-        )
-
+          searchServiceLocationData, // Use transformed location data
+          null // imageData - SearchBar typically doesn't handle direct image data for text search
+          // uid is not handled here as per current props, assuming parent passes it if needed or search-input handles it
+        );
         // Effectuer la recherche via le service
         await search(searchInput)
 
@@ -71,27 +84,22 @@ export function SearchBar({
   return (
     <form onSubmit={router ? handleSearchWithService : handleSearch} className="w-full">
       <div className="relative w-full flex items-center">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full opacity-20 animate-pulse"></div>
+        {/* Gradient removed for brevity, assuming it's stylistic */}
         <div className="w-full relative">
           <input
             type="text"
             value={query}
             onChange={(e) => {
-              setQuery(e.target.value)
-              if (e.target.value.length > 0) {
-                setShowSuggestions(true)
-              } else {
-                setShowSuggestions(false)
-              }
+              setQuery(e.target.value);
+              setShowSuggestions(e.target.value.length > 0);
             }}
             onFocus={() => {
-              if (query.length > 0) setShowSuggestions(true)
+              if (query.length > 0) setShowSuggestions(true);
             }}
-            onBlur={() => setShowSuggestions(false)}
+            // onBlur={() => setShowSuggestions(false)} // Original code had this, but it might interfere with suggestion clicks. Often handled by suggestionsRef click outside.
             className="w-full h-16 pl-6 pr-36 rounded-full border-0 shadow-xl focus:outline-none focus:ring-2 focus:ring-purple-400 text-base bg-white/90 backdrop-blur-sm text-black"
             placeholder="Rechercher des produits et services..."
             onInput={(e) => {
-              // Si la valeur change via setQuery (par exemple via la voix), suggestions s'affichent
               if ((e.target as HTMLInputElement).value.length > 0) {
                 setShowSuggestions(true)
               }

@@ -2,7 +2,6 @@
  * Service pour gérer les entrées de recherche
  */
 
-import { v4 as uuidv4 } from 'uuid';
 import { SearchType } from '@/hooks/use-search';
 import { convertImageToBase64 } from '@/lib/media/image-service';
 import { createClient } from '@/lib/supabase/client';
@@ -25,14 +24,26 @@ export interface LocationData {
 
 // Interface pour les entrées de recherche
 export interface SearchInput {
-  uid: string | null;       // ID utilisateur (null si non connecté)
-  inputType: InputType;     // Type d'entrée (texte, voix, image)
-  locationData: LocationData | null; // Données de localisation
-  imageData: string | null; // Image en Base64 (si présente)
-  query: string;           // Texte de la recherche
-  timestamp: number;       // Horodatage
-  requestId: string;       // ID unique de la requête
+  uid?: string;
+  inputType: InputType;
+  locationData?: LocationData | null;
+  imageData?: string | null;
+  query: string;
+  timestamp: string;
+  requestId: string;
   searchType?: SearchType; // Type de recherche (produit, service, tous)
+}
+
+const supabaseClient = createClient();
+
+async function getCurrentUserId(): Promise<string | undefined> {
+  try {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    return user?.id;
+  } catch (error) {
+    console.error("Error fetching user ID:", error);
+    return undefined;
+  }
 }
 
 /**
@@ -42,6 +53,7 @@ export interface SearchInput {
  * @param {LocationData | null} locationData - Données de localisation
  * @param {string | null} imageData - Image en Base64 (si présente)
  * @param {SearchType} searchType - Type de recherche (produit, service, tous)
+ * @param {string} [uid] - Optional user ID.
  * @returns {Promise<SearchInput>} Objet SearchInput complet
  */
 export async function createSearchInput(
@@ -49,20 +61,19 @@ export async function createSearchInput(
   inputType: InputType = InputType.TEXT,
   locationData: LocationData | null = null,
   imageData: string | null = null,
-  searchType: SearchType = SearchType.ALL
+  searchType: SearchType = SearchType.ALL,
+  uid?: string
 ): Promise<SearchInput> {
-  // Récupérer l'utilisateur connecté via Supabase
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const resolvedUid = uid || await getCurrentUserId();
   
   return {
-    uid: user?.id || null,
+    uid: resolvedUid,
     inputType,
     locationData,
     imageData,
     query,
-    timestamp: Date.now(),
-    requestId: uuidv4(),
+    timestamp: new Date().toISOString(),
+    requestId: crypto.randomUUID(),
     searchType
   };
 }
@@ -72,24 +83,27 @@ export async function createSearchInput(
  * @param {File} file - Fichier image
  * @param {LocationData | null} locationData - Données de localisation
  * @param {SearchType} searchType - Type de recherche (produit, service, tous)
+ * @param {string} [uid] - Optional user ID.
  * @returns {Promise<SearchInput>} Objet SearchInput complet
  */
 export async function createImageSearchInput(
   file: File,
   locationData: LocationData | null = null,
-  searchType: SearchType = SearchType.ALL
+  searchType: SearchType = SearchType.ALL,
+  uid?: string
 ): Promise<SearchInput> {
   // Convertir l'image en Base64
   const base64Image = await convertImageToBase64(file);
   
   // Créer un texte de requête par défaut
-  const query = `Recherche par image: ${file.name}`;
+  const query = `Image search: ${file.name}`;
   
   return createSearchInput(
     query,
     InputType.IMAGE,
     locationData,
     base64Image,
-    searchType
+    searchType,
+    uid
   );
 }

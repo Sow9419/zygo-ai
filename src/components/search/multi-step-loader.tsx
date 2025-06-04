@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react" // Added useMemo
 import { motion, AnimatePresence } from "framer-motion"
 import { Search, Database, Cpu, Zap, CheckCircle } from "lucide-react"
 import { Progress } from "../ui/progress"
@@ -32,8 +32,8 @@ export function MultiStepLoader({
   const [progress, setProgress] = useState(0)
   const [isComplete, setIsComplete] = useState(false)
 
-  // Définir les étapes du processus de recherche
-  const steps: Step[] = [
+  // Définir les étapes du processus de recherche avec useMemo
+  const steps: Step[] = useMemo(() => [
     {
       id: 1,
       icon: <Search className="h-6 w-6 text-blue-500" />,
@@ -62,7 +62,7 @@ export function MultiStepLoader({
       description: "Préparation de l'affichage",
       duration: 1000,
     },
-  ]
+  ], [query]); // Add query to dependency array of useMemo as it's used in description
 
   // Réinitialiser l'état lorsque isLoading change
   useEffect(() => {
@@ -91,7 +91,7 @@ export function MultiStepLoader({
     }
 
     // Calculer la progression globale
-    const progressIncrement = 100 / steps.length
+    // const progressIncrement = 100 / steps.length; // Removed unused variable
     setProgress(Math.min(((currentStep) / steps.length) * 100, 100))
 
     // Passer à l'étape suivante après la durée spécifiée

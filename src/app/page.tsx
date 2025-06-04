@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { type SpeechRecognitionEvent } from "@/components/navigation/navbar" // Assuming SpeechRecognitionEvent is exported from navbar.tsx, if not, adjust the import path or define it locally.
 
 import { useState, useEffect, useRef } from "react"
 import { TrendingSection } from "@/components/search/trending-section"
@@ -123,7 +124,7 @@ export default function Home() {
     recognition.interimResults = false
     recognition.maxAlternatives = 1
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => { // Changed type from any to SpeechRecognitionEvent
       // Compatible avec SpeechRecognitionEvent
       const transcript = event.results[0][0].transcript
       setQuery(transcript)
