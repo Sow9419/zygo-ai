@@ -38,35 +38,34 @@ export async function POST(request: NextRequest) {
         ],
         totalResults: 2,
         executionTime: 0.1,
-        requestId: requestData.requestId
+        requestId: requestData.requestId,
+        status: "simulation_success",
+        suggestions: [`sim: ${requestData.query} 1`, `sim: ${requestData.query} 2`],
+        processingTime: 100
       }, { status: 200 });
     }
     
-    // Récupérer l'utilisateur actuel si disponible
     const supabase = createClient();
     const { data: { session } } = await supabase.auth.getSession();
     
-    // Ajouter des informations supplémentaires à la requête
     const enrichedRequestData = {
       ...requestData,
-      userId: session?.user?.id || null,
-      timestamp: Date.now()
+      userId: session?.user?.id || requestData.uid || null, // Prioritize session UID, fallback to requestData.uid
+      timestamp: new Date().toISOString() // Use ISOString for timestamp
     };
     
-    // Transférer la requête au webhook n8n
     const n8nResponse = await fetch(n8nWebhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(enrichedRequestData)
     });
     
     if (!n8nResponse.ok) {
-      throw new Error(`Erreur lors de l'appel au webhook n8n: ${n8nResponse.status}`);
+      const errorBody = await n8nResponse.text();
+      console.error("n8n webhook response error body:", errorBody);
+      throw new Error(`Erreur lors de l'appel au webhook n8n: ${n8nResponse.status} ${n8nResponse.statusText}`);
     }
     
-    // Récupérer et retourner les résultats du webhook n8n
     const n8nData = await n8nResponse.json();
     
     return NextResponse.json(n8nData, { status: 200 });

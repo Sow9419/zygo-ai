@@ -30,13 +30,11 @@ export async function convertImageToBase64(file: File): Promise<string> {
 /**
  * Analyse une image pour extraire des informations pertinentes
  * Cette fonction est un placeholder pour une future implémentation d'analyse d'image
- * @param {string} _base64Image - Image en format Base64 (marked as unused)
  * @returns {Promise<{tags: string[], dominantColors: string[]}>} Informations extraites de l'image
  */
-export async function analyzeImage(_base64Image: string): Promise<{tags: string[], dominantColors: string[]}> {
+export async function analyzeImage(): Promise<{tags: string[], dominantColors: string[]}> { // Removed _base64Image parameter
   // Cette fonction est un placeholder pour une future implémentation d'analyse d'image
   // Dans une vraie implémentation, cette fonction pourrait appeler une API d'analyse d'image
-  // Puisque base64Image n'est pas utilisé dans la simulation, il est préfixé par _
   
   // Simulation d'une analyse d'image
   return {

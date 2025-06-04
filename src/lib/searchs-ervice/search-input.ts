@@ -17,8 +17,8 @@ export enum InputType {
 export interface LocationData {
   country: string;
   city: string;
-  lat: number;
-  lon: number;
+  lat?: number;
+  lon?: number;
   isFallback?: boolean;
 }
 

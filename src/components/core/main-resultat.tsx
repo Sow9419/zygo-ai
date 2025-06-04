@@ -53,6 +53,17 @@ export default function Resultats() {
             >
                 <div className="h-auto overflow-y-auto scrollbar-thin scrollbar-thumb-purple-400 scrollbar-track-transparent scrollbar-thumb-rounded">
                     
+                    {/* Conditional rendering for Loader, outside the main grid if it needs to overlay */}
+                    {isLoading && (
+                        <MultiStepLoader
+                            isLoading={isLoading}
+                            onComplete={handleLoadingComplete}
+                            processingTime={processingTime || 0}
+                            requestId={requestId || undefined}
+                            query={query}
+                        />
+                    )}
+
                     {/* Bento Grid Layout */}
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                         {/* Zone principale des résultats - occupe 3 colonnes sur grand écran */}
@@ -60,18 +71,8 @@ export default function Resultats() {
                             <div className="bg-white/20 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-white/10">
                                 <p className="text-white text-lg font-semibold">Résultats trouvés : <span className="text-white/80 font-normal">{query}</span></p>
                                 
-                                {/* Afficher le loader pendant le chargement */}
-                                {isLoading ? (
-                                    <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 my-4">
-                                        <MultiStepLoader 
-                                            isLoading={isLoading} 
-                                            onComplete={handleLoadingComplete}
-                                            processingTime={processingTime || 0}
-                                            requestId={requestId || undefined}
-                                            query={query}
-                                        />
-                                    </div>
-                                ) : error ? (
+                                {/* Afficher les résultats ou une erreur si le chargement est terminé */}
+                                {!isLoading && error ? (
                                     <div className="bg-red-500/20 backdrop-blur-md rounded-xl p-6 my-4 text-white">
                                         <p>Une erreur est survenue lors de la recherche. Veuillez réessayer.</p>
                                         <button 
@@ -81,7 +82,7 @@ export default function Resultats() {
                                             Réessayer
                                         </button>
                                     </div>
-                                ) : (
+                                ) : !isLoading && !error ? (
                                     <RenderStrategy 
                                         results={results} 
                                         totalResults={totalResults}
@@ -95,7 +96,7 @@ export default function Resultats() {
                                             )
                                         )}
                                     </RenderStrategy>
-                                )}
+                                ) : null} {/* Ne rien afficher ici si isLoading est true, car le loader est géré au-dessus */}
                             </div>
                         </div>
                         

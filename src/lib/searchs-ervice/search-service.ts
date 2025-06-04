@@ -3,7 +3,7 @@
  */
 
 import { SearchType, SearchResult } from '@/hooks/use-search';
-import { SearchInput } from './search-input';
+import { SearchInput, LocationData } from './search-input'; // Ensure LocationData is imported
 
 export interface SearchRequestData {
   query: string;
@@ -24,6 +24,10 @@ export interface SearchResponseData {
   results: SearchResult[];
   totalResults: number;
   executionTime?: number;
+  // Add other fields from n8n response if necessary, like status, suggestions, processingTime
+  status?: string;
+  suggestions?: string[];
+  processingTime?: number;
 }
 
 /**
@@ -33,24 +37,29 @@ export interface SearchResponseData {
  */
 export async function search(searchInput: SearchInput): Promise<SearchResponseData> {
   try {
-    // Convertir SearchInput en SearchRequestData pour compatibilité
+    const locationObject = searchInput.locationData &&
+                           typeof searchInput.locationData.lat === 'number' &&
+                           typeof searchInput.locationData.lon === 'number'
+      ? {
+          latitude: searchInput.locationData.lat,
+          longitude: searchInput.locationData.lon,
+          city: searchInput.locationData.city,
+          country: searchInput.locationData.country
+        }
+      : undefined;
+
     const data: SearchRequestData = {
       query: searchInput.query,
-      type: searchInput.searchType || SearchType.ALL,
-      location: searchInput.locationData ? {
-        latitude: searchInput.locationData.lat,
-        longitude: searchInput.locationData.lon,
-        city: searchInput.locationData.city,
-        country: searchInput.locationData.country
-      } : undefined,
+      type: searchInput.searchType || SearchType.ALL, // Use searchType from input or default
+      location: locationObject,
       imageData: searchInput.imageData || undefined,
-      inputType: searchInput.inputType,
-      uid: searchInput.uid,
+      inputType: searchInput.inputType, // Pass InputType as string
+      uid: searchInput.uid || null, // Pass uid, ensure it's null if undefined for API
       requestId: searchInput.requestId
     };
 
-    // Utiliser l'URL du webhook n8n si définie dans les variables d'environnement
-    const searchUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || '/api/search';
+    // ALWAYS call /api/search as per new plan. Webhook URL logic removed from client-side.
+    const searchUrl = '/api/search';
     
     const response = await fetch(searchUrl, {
       method: 'POST',
@@ -61,7 +70,9 @@ export async function search(searchInput: SearchInput): Promise<SearchResponseDa
     });
     
     if (!response.ok) {
-      throw new Error(`Erreur de recherche: ${response.status}`);
+      const errorBody = await response.text();
+      console.error("Search API response error body:", errorBody);
+      throw new Error(`Erreur de recherche: ${response.status} ${response.statusText}`);
     }
     
     const responseData = await response.json();
@@ -69,7 +80,10 @@ export async function search(searchInput: SearchInput): Promise<SearchResponseDa
     return {
       results: responseData.results || [],
       totalResults: responseData.totalResults || responseData.results?.length || 0,
-      executionTime: responseData.executionTime
+      executionTime: responseData.executionTime,
+      status: responseData.status,
+      suggestions: responseData.suggestions,
+      processingTime: responseData.processingTime
     };
   } catch (error) {
     console.error('Erreur lors de la recherche:', error);
