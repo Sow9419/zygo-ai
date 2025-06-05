@@ -5,37 +5,50 @@ import { SearchResultats } from "./card-searchresultats"
 import ListSearchResultats from "./list-searchresultats"
 import { ImageGallery, RelatedSearches } from "@/components/search/resultats-suggestion"
 import { motion } from "framer-motion"
-import { useSearchResults } from "@/hooks/use-search-results"
+import { useSearchState } from "@/contexts/search-state-context" // Import new context hook
 import { MultiStepLoader } from "@/components/search/multi-step-loader"
 import { RenderStrategy, ViewMode } from "@/components/search/render-strategy"
 import { useState } from "react"
+import { useRouter } from "next/navigation" // For retry navigation
 
 export default function Resultats() {
-    // Récupérer le paramètre de recherche depuis l'URL
-    const searchParams = useSearchParams()
-    const query = searchParams.get("q") || "produits populaires"
-    const requestId = searchParams.get("requestId")
-    
-    // État pour le mode d'affichage (grille ou liste)
-    const [viewMode, setViewMode] = useState<ViewMode>("grid")
-    
-    // Utiliser le hook personnalisé pour récupérer les résultats
+    const searchParams = useSearchParams();
+    const router = useRouter(); // For retry navigation
+
+    // Get query from URL for display purposes, but primary data comes from context
+    const displayQuery = searchParams.get("q") || "Recherche";
+    // requestId from URL can be useful for debugging or if context is ever lost and needs re-sync (advanced)
+    const currentRequestIdFromUrl = searchParams.get("requestId");
+
+    const { state, dispatch } = useSearchState(); // Use the new context state and dispatch
     const { 
-        results, 
-        status, 
+        isLoading,
         error, 
-        processingTime, 
+        results,
         totalResults,
-        reset
-    } = useSearchResults()
+        processingTime,
+        query: contextQuery, // Query that triggered the search
+        requestId: contextRequestId // RequestId of the current/last search in context
+    } = state;
     
-    // Déterminer si nous sommes en train de charger
-    const isLoading = status === 'loading'
+    const [viewMode, setViewMode] = useState<ViewMode>("grid");
+
+    // The query to display in the loader should be the one from the context if available (i.e., during/after search)
+    // or fallback to the URL's query if context is not yet populated for this specific navigation.
+    const loaderQuery = isLoading ? contextQuery : displayQuery;
+    const loaderRequestId = isLoading ? contextRequestId : currentRequestIdFromUrl;
+
+    const handleRetry = () => {
+      dispatch({ type: 'CLEAR_SEARCH_STATE' });
+      // Navigate to home or allow a new search. For now, navigating to home.
+      router.push('/');
+    };
     
-    // Fonction pour gérer la fin du chargement
     const handleLoadingComplete = () => {
-        // Rien à faire ici pour l'instant
-    }
+        // This callback is for MultiStepLoader's onComplete.
+        // The actual setting of loading to false is handled by SET_SEARCH_RESULTS or SET_SEARCH_ERROR actions.
+        // console.log("MultiStepLoader's onComplete fired. Search state isLoading:", isLoading);
+    };
 
     return(
         <motion.main 
@@ -44,6 +57,17 @@ export default function Resultats() {
             transition={{ duration: 0.5 }}
             className="flex-grow flex flex-col items-center justify-center z-20 md:px-8 sm:px-8 py-0 mx-auto mt-20 max-w-7xl"
         >
+            {/* Render MultiStepLoader at a high level if loading */}
+            {isLoading && (
+                <MultiStepLoader
+                    isLoading={true} // Pass true directly
+                    onComplete={handleLoadingComplete}
+                    processingTime={processingTime || 0}
+                    requestId={loaderRequestId || undefined}
+                    query={loaderQuery || ""}
+                />
+            )}
+
             <div className="pb-8"></div>
             <motion.div 
                 initial={{ opacity: 0, scale: 0.98 }}
@@ -52,37 +76,35 @@ export default function Resultats() {
                 className="w-full rounded-2xl overflow-hidden border border-white/10 transition-all duration-300 hover:shadow-purple-500/20"
             >
                 <div className="h-auto overflow-y-auto scrollbar-thin scrollbar-thumb-purple-400 scrollbar-track-transparent scrollbar-thumb-rounded">
-                    
-                    {/* Conditional rendering for Loader, outside the main grid if it needs to overlay */}
-                    {isLoading && (
-                        <MultiStepLoader
-                            isLoading={isLoading}
-                            onComplete={handleLoadingComplete}
-                            processingTime={processingTime || 0}
-                            requestId={requestId || undefined}
-                            query={query}
-                        />
-                    )}
-
-                    {/* Bento Grid Layout */}
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                        {/* Zone principale des résultats - occupe 3 colonnes sur grand écran */}
                         <div className="lg:col-span-3 space-y-6">
                             <div className="bg-white/20 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-white/10">
-                                <p className="text-white text-lg font-semibold">Résultats trouvés : <span className="text-white/80 font-normal">{query}</span></p>
+                                <p className="text-white text-lg font-semibold">
+                                    Résultats pour : <span className="text-white/80 font-normal">{displayQuery}</span>
+                                </p>
                                 
-                                {/* Afficher les résultats ou une erreur si le chargement est terminé */}
-                                {!isLoading && error ? (
-                                    <div className="bg-red-500/20 backdrop-blur-md rounded-xl p-6 my-4 text-white">
-                                        <p>Une erreur est survenue lors de la recherche. Veuillez réessayer.</p>
+                                {/* Conditional Content Display based on context state */}
+                                {!isLoading && error && (
+                                    <div className="bg-red-500/20 backdrop-blur-md rounded-xl p-6 my-4 text-white text-center">
+                                        <p className="font-semibold text-lg">Une erreur est survenue lors de la recherche.</p>
+                                        <p className="text-sm mb-4">{error}</p>
                                         <button 
-                                            onClick={reset}
-                                            className="mt-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md transition-colors"
+                                            onClick={handleRetry}
+                                            className="mt-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors"
                                         >
                                             Réessayer
                                         </button>
                                     </div>
-                                ) : !isLoading && !error ? (
+                                )}
+
+                                {!isLoading && !error && results.length === 0 && (
+                                     <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 my-4 text-white text-center">
+                                        <p className="font-semibold text-lg">Aucun résultat trouvé.</p>
+                                        <p className="text-sm mb-4">Essayez une autre recherche ou vérifiez vos termes.</p>
+                                     </div>
+                                )}
+
+                                {!isLoading && !error && results.length > 0 && (
                                     <RenderStrategy 
                                         results={results} 
                                         totalResults={totalResults}
@@ -90,25 +112,28 @@ export default function Resultats() {
                                     >
                                         {(filteredResults) => (
                                             viewMode === "grid" ? (
-                                                <SearchResultats results={filteredResults} isLoading={isLoading} />
+                                                <SearchResultats results={filteredResults} isLoading={false} />
                                             ) : (
                                                 <ListSearchResultats results={filteredResults} />
                                             )
                                         )}
                                     </RenderStrategy>
-                                ) : null} {/* Ne rien afficher ici si isLoading est true, car le loader est géré au-dessus */}
+                                )}
                             </div>
                         </div>
                         
-                        {/* Sidebar - occupe 1 colonne sur grand écran */}
                         <div className="lg:col-span-1 space-y-6">
-                            {/* Galerie d'images */}
-                            <div className="bg-white/20 backdrop-blur-md rounded-xl p-4 shadow-lg border border-white/10">
-                                <ImageGallery query={query} />
-                            </div>
-                            {/* Recherches associées */}
-                            <div className="bg-white/20 backdrop-blur-md rounded-xl p-4 shadow-lg border border-white/10">
-                                <RelatedSearches query={query} />
+                            {/* These could also be conditional based on search type or results */}
+                            {!isLoading && !error && (
+                                <>
+                                    <div className="bg-white/20 backdrop-blur-md rounded-xl p-4 shadow-lg border border-white/10">
+                                        <ImageGallery query={displayQuery} />
+                                    </div>
+                                    <div className="bg-white/20 backdrop-blur-md rounded-xl p-4 shadow-lg border border-white/10">
+                                        <RelatedSearches query={displayQuery} />
+                                    </div>
+                                </>
+                            )}
                             </div>
                         </div>
                     </div>

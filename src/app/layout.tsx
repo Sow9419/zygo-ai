@@ -1,22 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google"; // Changed font to Inter as per prompt's target
 import "./globals.css";
-import { AuthProvider } from "@/contexts/auth-context";
-import { LocationProvider } from "@/contexts/location-context";
+import { AppProviders } from "./providers"; // Import the new providers component
+import { Toaster } from "@/components/ui/sonner"; // Assuming Toaster is for global notifications
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"] }); // Changed font to Inter
 
 export const metadata: Metadata = {
-  title: "Projet Next.js Moderne",
-  description: "Projet Next.js 15+ avec Tailwind CSS et shadcn/ui",
+  title: "Zygo Search", // Example title from prompt
+  description: "Next Generation Search Experience", // Example description from prompt
 };
 
 export default function RootLayout({
@@ -25,17 +17,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-background font-sans antialiased light:bg-light-background`}
-      >
-        <AuthProvider>
-          <LocationProvider>
-            <div className="relative flex min-h-screen flex-col">
-              <div className="flex-1">{children}</div>
-            </div>
-          </LocationProvider>
-        </AuthProvider>
+    <html lang="fr"> {/* Removed suppressHydrationWarning for now, can be added if needed */}
+      <body className={inter.className}> {/* Used Inter font className */}
+        <AppProviders> {/* Wrap children with AppProviders */}
+          {/* The existing divs for layout structure should remain inside AppProviders if they are part of the content */}
+          <div className="relative flex min-h-screen flex-col">
+            <div className="flex-1">{children}</div>
+          </div>
+          <Toaster /> {/* Toaster for notifications */}
+        </AppProviders>
       </body>
     </html>
   );

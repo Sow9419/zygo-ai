@@ -6,11 +6,9 @@ import { type SpeechRecognitionEvent } from "@/components/navigation/navbar" // 
 import { useState, useEffect, useRef } from "react"
 import { TrendingSection } from "@/components/search/trending-section"
 import { BackgroundSlider } from "@/components/media/background-slider"
-import { useRouter } from "next/navigation"
-import { useLocationContext } from "@/contexts/location-context"
-import { createSearchInput, InputType, createImageSearchInput } from "@/lib/searchs-ervice/search-input"
-import { search } from "@/lib/searchs-ervice/search-service"
-
+// LocationContext and SearchInput/ImageSearchInput are handled by useSearchHandler
+// search service is called by useSearchHandler
+import { useSearchHandler } from "@/hooks/use-search-handler"; // Import the new hook
 // Composants refactorisés
 import { Header } from "@/components/navigation/header"
 import { MainContent } from "@/components/search/main-content"
@@ -26,25 +24,10 @@ export default function Home() {
   const menuRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const applicationRef = useRef<HTMLDivElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const suggestionsRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
-  
-  // Contexte de localisation
-  const { locationData } = useLocationContext();
-  // Helper pour transformer locationData (avec .location) en LocationData attendu par createSearchInput
-  function getLocationDataForSearch(): import("@/lib/searchs-ervice/search-input").LocationData | null {
-    if (locationData && locationData.location && typeof locationData.location.lat === "number" && typeof locationData.location.lon === "number") {
-      return {
-        country: locationData.country,
-        city: locationData.city,
-        lat: locationData.location.lat,
-        lon: locationData.location.lon,
-        isFallback: locationData.isFallback,
-      };
-    }
-    return null;
-  }
+  const fileInputRef = useRef<HTMLInputElement>(null); // For MainContent's image search
+  const suggestionsRef = useRef<HTMLDivElement>(null); // For MainContent's suggestions
+
+  const { handleTextSearch, handleImageSearch, handleVoiceSearch: triggerVoiceSearch } = useSearchHandler();
 
   // Fermer le menu et les suggestions quand on clique en dehors ou appuie sur Escape
   useEffect(() => {
@@ -83,116 +66,67 @@ export default function Home() {
       document.removeEventListener("mousedown", handleClickOutside)
       document.removeEventListener("keydown", handleEscape)
     }
-  }, [isRecording])
+  }, [isRecording]);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Define handlers to be passed to MainContent
+  const onSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (query.trim()) {
-      try {
-        // Créer un objet SearchInput
-        const searchInput = await createSearchInput(
-          query.trim(),
-          InputType.TEXT,
-          getLocationDataForSearch(),
-          null
-        )
-
-        // Effectuer la recherche via le service
-        await search(searchInput)
-
-        // Rediriger vers la page de résultats avec l'ID de requête
-        router.push(`/search?q=${encodeURIComponent(query.trim())}&requestId=${searchInput.requestId}`)
-      } catch (error) {
-        console.error('Erreur lors de la recherche:', error)
-        // En cas d'erreur, utiliser la redirection classique
-        router.push(`/search?q=${encodeURIComponent(query.trim())}`)
-      }
+      handleTextSearch(query.trim());
+      // setShowSuggestions(false); // MainContent might handle this
     }
-  }
+  };
 
-  const handleVoiceSearch = () => {
+  const onVoiceSearch = () => { // Renamed to avoid conflict if passed directly
     if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-      alert("La reconnaissance vocale n'est pas prise en charge par votre navigateur.")
-      return
+      alert("La reconnaissance vocale n'est pas prise en charge.");
+      return;
     }
-
-    setIsRecording(!isRecording)
-
-    // @ts-expect-error - SpeechRecognition n'est pas encore dans les types TypeScript standards
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)()
+    setIsRecording(true);
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionAPI) { setIsRecording(false); return; }
+    const recognition = new SpeechRecognitionAPI();
     recognition.lang = "fr-FR"
     recognition.interimResults = false
     recognition.maxAlternatives = 1
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => { // Changed type from any to SpeechRecognitionEvent
-      // Compatible avec SpeechRecognitionEvent
-      const transcript = event.results[0][0].transcript
-      setQuery(transcript)
-      setIsRecording(false)
-
-      // Soumettre automatiquement après une courte pause
-      setTimeout(() => {
-        router.push(`/search?q=${encodeURIComponent(transcript)}`)
-      }, 500)
-    }
-
-    recognition.onerror = () => {
-      setIsRecording(false)
-    }
-
-    recognition.onend = () => {
-      setIsRecording(false)
-    }
-
-    recognition.start()
-  }
-
-  const handleImageSearch = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click()
-    }
-  }
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      try {
-        // Créer un objet SearchInput pour la recherche par image
-        const searchInput = await createImageSearchInput(
-          file,
-          getLocationDataForSearch()
-        )
-
-        // Mettre à jour le texte de recherche dans l'interface
-        setQuery(searchInput.query)
-
-        // Effectuer la recherche via le service
-        await search(searchInput)
-
-        // Rediriger vers la page de résultats avec l'ID de requête
-        router.push(`/search?q=${encodeURIComponent(searchInput.query)}&requestId=${searchInput.requestId}`)
-      } catch (error) {
-        console.error('Erreur lors de la recherche par image:', error)
-        // En cas d'erreur, utiliser une approche simplifiée
-        setQuery("Recherche par image similaire à " + file.name)
-        router.push(`/search?q=${encodeURIComponent("Recherche par image similaire à " + file.name)}`)
-      } finally {
-        // Réinitialiser l'input file pour permettre la sélection du même fichier
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ""
-        }
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[0][0].transcript;
+      setQuery(transcript); // Update local query state for display in input
+      setIsRecording(false);
+      if (transcript.trim()) {
+        triggerVoiceSearch(transcript.trim()); // Call hook's voice search
       }
+    };
+    recognition.onerror = () => setIsRecording(false);
+    recognition.onend = () => setIsRecording(false);
+    recognition.start();
+  };
+
+  const onImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageSearch(file);
+      setQuery(`Recherche par image: ${file.name}`); // Optimistic UI update
     }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const onImageSearchClick = () => { // Corrected: removed underscore from function name
+    fileInputRef.current?.click()
   }
 
-  const clearSearch = () => {
-    setQuery("")
-  }
-  const handleSuggestionClick = (suggestion: string) => {
-    setQuery(suggestion)
-    router.push(`/search?q=${encodeURIComponent(suggestion)}`)
-    setShowSuggestions(false)
-  }
+  const onClearSearch = () => {
+    setQuery("");
+    // Potentially focus input in MainContent, requires passing ref or callback
+  };
+
+  const onSuggestionClick = (suggestion: string) => {
+    setQuery(suggestion);
+    handleTextSearch(suggestion); // Use hook for suggestion click
+    setShowSuggestions(false);
+  };
+
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-auto scrollbar-hide">
@@ -237,15 +171,14 @@ export default function Home() {
         showSuggestions={showSuggestions}
         setShowSuggestions={setShowSuggestions}
         suggestionsRef={suggestionsRef as React.RefObject<HTMLDivElement>}
-        isRecording={isRecording}
-        setIsRecording={setIsRecording}
-        handleVoiceSearch={handleVoiceSearch}
-        handleImageSearch={handleImageSearch}
-        handleSearch={handleSearch}
-        clearSearch={clearSearch}
+        isRecording={isRecording} //setIsRecording={setIsRecording} // setIsRecording is local to page.tsx
+        handleVoiceSearch={onVoiceSearch} // Pass the page's voice handler
+        handleImageSearch={onImageSearchClick} // Pass the page's image click handler
+        handleSearch={onSearchSubmit}
+        clearSearch={onClearSearch}
         fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
-        handleImageUpload={handleImageUpload}
-        handleSuggestionClick={handleSuggestionClick}
+        handleImageUpload={onImageUpload} // Pass the page's image upload handler
+        handleSuggestionClick={onSuggestionClick}
       />
 
       {/* Trending Section */}

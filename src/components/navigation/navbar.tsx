@@ -1,17 +1,18 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect } from "react" // Removed useContext
+import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
+// useRouter is not directly used by navbar for search submission anymore, useSearchHandler handles navigation
 import { Menu, X, Search, Mic, Camera } from "lucide-react"
 import { MenuDropdown } from "./menu-dropdown"
 import { SearchSuggestions } from "../search/search-suggestions"
-import { useLocationContext, type LocationData as ContextLocationData } from "@/contexts/location-context"
-import { useAuth } from "@/contexts/auth-context"
-import { createSearchInput, InputType, createImageSearchInput, type LocationData as SearchLocationData } from "@/lib/searchs-ervice/search-input"
-import { search } from "@/lib/searchs-ervice/search-service"
+// Contexts for UID and Location are used by useSearchHandler, not directly here.
+// InputType and SearchType will be handled by useSearchHandler.
+// search service is called by useSearchHandler.
+import { useSearchHandler } from "@/hooks/use-search-handler"; // Import the new hook
+import { type SpeechRecognitionEvent, type SpeechRecognition, type SpeechRecognitionConstructor } from "./navbar"; // Keep these local for voice input processing
 
 // Corrected SpeechRecognition interfaces (ensure they are exported)
 export interface SpeechRecognitionEvent {
@@ -38,7 +39,7 @@ export interface SpeechRecognitionConstructor {
   new (): SpeechRecognition;
 }
 
-// Global declaration for window.SpeechRecognition etc.
+// Global declaration for window.SpeechRecognition
 declare global {
   interface Window {
     SpeechRecognition?: SpeechRecognitionConstructor
@@ -46,50 +47,23 @@ declare global {
   }
 }
 
-// Helper function to transform LocationData from context to search service format
-function transformLocationData(contextLocationData: ContextLocationData | null): SearchLocationData | null {
-  if (!contextLocationData) return null;
-  return {
-    country: contextLocationData.country,
-    city: contextLocationData.city,
-    lat: contextLocationData.location?.lat,
-    lon: contextLocationData.location?.lon,
-    isFallback: contextLocationData.isFallback,
-  };
-}
-
-
 export function Navbar({ initialQuery = "" }: { initialQuery?: string }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState(initialQuery)
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [isFocused, setIsFocused] = useState(false) // État de focus sur la barre de recherche
-  const [isRecording, setIsRecording] = useState(false) // État d'enregistrement vocal
-  const [scrolled, setScrolled] = useState(false) // État de défilement de la page
+  const [isFocused, setIsFocused] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
 
-  // Hook de navigation Next.js
-  const router = useRouter()
   const menuRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  const locationContextHook = useLocationContext();
-  const { user } = useAuth();
-  
-  // Données de localisation transformées
-  const searchServiceLocationData = transformLocationData(locationContextHook?.locationData || null);
+  const { handleTextSearch, handleImageSearch, handleVoiceSearch: triggerVoiceSearch } = useSearchHandler(); // Use the hook
 
-  // Effet pour détecter le défilement de la page et modifier l'apparence du header
   useEffect(() => {
-    const handleScroll = () => {
-      const offset = window.scrollY
-      if (offset > 10) {
-        setScrolled(true) // Activer le style avec backdrop-blur après 10px de scroll
-      } else {
-        setScrolled(false)
-      }
-    }
+    const handleScroll = () => { setScrolled(window.scrollY > 10); };
     
     // Ajouter l'écouteur d'événement de scroll
     window.addEventListener('scroll', handleScroll)
@@ -133,189 +107,91 @@ export function Navbar({ initialQuery = "" }: { initialQuery?: string }) {
 
     // Nettoyer les écouteurs lors du démontage
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-      document.removeEventListener("keydown", handleEscape)
-    }
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
-  // Fonction pour gérer la soumission du formulaire de recherche
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (query.trim()) {
-      try {
-        // Créer un objet SearchInput
-        const searchInput = await createSearchInput(
-          query.trim(),
-          InputType.TEXT,
-          searchServiceLocationData,
-          null,
-          user?.id
-        );
-        // Effectuer la recherche via le service
-        await search(searchInput)
-
-        // Rediriger vers la page de résultats avec l'ID de requête
-        router.push(`/search?q=${encodeURIComponent(query.trim())}&requestId=${searchInput.requestId}`)
-        setShowSuggestions(false)
-      } catch (error) {
-        console.error('Erreur lors de la recherche:', error)
-        // En cas d'erreur, utiliser la redirection classique
-        router.push(`/search?q=${encodeURIComponent(query.trim())}`)
-        setShowSuggestions(false)
-      }
+      handleTextSearch(query.trim()); // Use hook method
+      setShowSuggestions(false);
+      // inputRef.current?.blur(); // Optionally blur input
     }
-  }
+  };
 
-  // Fonction pour vider la barre de recherche
   const clearSearch = () => {
-    setQuery("")
-    // Remettre le focus sur l'input après l'avoir vidé
-    if (inputRef.current) {
-      inputRef.current.focus()
-    }
-  }
+    setQuery("");
+    inputRef.current?.focus();
+  };
 
-  // Fonction pour gérer le clic sur une suggestion
-  const handleSuggestionClick = (suggestion: string) => {
-    setQuery(suggestion)
-    // Naviguer directement vers les résultats de la suggestion
-    router.push(`/search?q=${encodeURIComponent(suggestion)}`)
-    setShowSuggestions(false)
-  }
+  const onSuggestionClick = (suggestion: string) => {
+    setQuery(suggestion);
+    handleTextSearch(suggestion); // Use hook method for suggestions too
+    setShowSuggestions(false);
+  };
 
-  // Fonction pour gérer la recherche vocale
-  const handleVoiceSearch = () => {
-    // Vérifier si la reconnaissance vocale est supportée
+  const onVoiceSearchClick = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert("La reconnaissance vocale n'est pas prise en charge par votre navigateur.")
-      return
+      alert("La reconnaissance vocale n'est pas prise en charge par votre navigateur.");
+      return;
     }
-
-    setIsRecording(true)
-
-    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition
+    setIsRecording(true);
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) {
-      alert("La reconnaissance vocale n'est pas prise en charge par votre navigateur.")
-      setIsRecording(false)
-      return
+      setIsRecording(false); return;
     }
-
-    const recognition = new SpeechRecognitionAPI()
-    recognition.lang = "fr-FR"
-    recognition.interimResults = false
-    recognition.maxAlternatives = 1
-
-    recognition.onresult = async (event: SpeechRecognitionEvent) => {
-      const transcript = event.results[0][0].transcript
-      setQuery(transcript)
-      setIsRecording(false)
-      
-      // Soumettre automatiquement la recherche vocale
+    const recognition = new SpeechRecognitionAPI();
+    recognition.lang = "fr-FR";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[0][0].transcript;
+      setQuery(transcript); // Update query state
+      setIsRecording(false);
       if (transcript.trim()) {
-        try {
-          // Créer un objet SearchInput pour la recherche vocale
-          const searchInput = await createSearchInput(
-            transcript.trim(),
-            InputType.VOICE,
-            searchServiceLocationData,
-            null,
-            user?.id
-          );
-          // Effectuer la recherche via le service
-          await search(searchInput)
-
-          // Rediriger vers la page de résultats avec l'ID de requête
-          router.push(`/search?q=${encodeURIComponent(transcript.trim())}&requestId=${searchInput.requestId}`);
-        } catch (error) {
-          console.error('Erreur lors de la recherche vocale:', error)
-          // En cas d'erreur, utiliser la redirection classique
-          router.push(`/search?q=${encodeURIComponent(transcript.trim())}`);
-        }
+        triggerVoiceSearch(transcript.trim()); // Use hook method
       }
-    }
-    recognition.onerror = () => setIsRecording(false)
-    recognition.onend = () => setIsRecording(false)
-    recognition.start()
-  }
+    };
+    recognition.onerror = () => setIsRecording(false);
+    recognition.onend = () => setIsRecording(false);
+    recognition.start();
+  };
 
-  // Fonction pour déclencher la sélection d'image
-  const handleImageSearch = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click()
-    }
-  }
+  const onImageSearchClick = () => {
+    fileInputRef.current?.click();
+  };
 
-  // Fonction pour gérer l'upload d'image
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+  const onImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
-      try {
-        // Créer un objet SearchInput pour la recherche par image
-        const searchInput = await createImageSearchInput(
-          file,
-          searchServiceLocationData,
-          user?.id
-        );
-        // Mettre à jour le texte de recherche dans l'interface
-        setQuery(searchInput.query)
-
-        // Effectuer la recherche via le service
-        await search(searchInput)
-
-        // Rediriger vers la page de résultats avec l'ID de requête
-        router.push(`/search?q=${encodeURIComponent(searchInput.query)}&requestId=${searchInput.requestId}`)
-      } catch (error) {
-        console.error('Erreur lors de la recherche par image:', error)
-        // En cas d'erreur, utiliser une approche simplifiée
-        setQuery("Recherche par image similaire à " + file.name)
-        router.push(`/search?q=${encodeURIComponent("Recherche par image similaire à " + file.name)}`)
-      } finally {
-        // Réinitialiser l'input file pour permettre la sélection du même fichier
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ""
-        }
-      }
+      handleImageSearch(file); // Use hook method
+      // Query will be updated by the context/redirect if necessary, or set by useSearchHandler logic
+      setQuery(`Recherche par image: ${file.name}`); // Optimistic update for UI
     }
-  }
+    if (fileInputRef.current) fileInputRef.current.value = ""; // Reset file input
+  };
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-black/10 backdrop-blur-lg shadow-lg' : 'bg-transparent'}`}>
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          {/* Menu hamburger - visible uniquement sur mobile (à gauche) */}
           <div className="md:hidden">
-            <button
-              className="p-2 text-gray-600 hover:text-purple-700 transition-colors bg-gray-100/80 hover:bg-gray-200/80 backdrop-blur-sm rounded-full"
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
-              aria-expanded={menuOpen}
-            >
+            <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 text-gray-600 hover:text-purple-700 transition-colors bg-gray-100/80 hover:bg-gray-200/80 backdrop-blur-sm rounded-full" aria-label={menuOpen ? "Fermer menu" : "Ouvrir menu"} aria-expanded={menuOpen}>
               {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
-          
-          {/* Logo - masqué sur mobile, visible sur desktop */}
           <div className="hidden md:flex items-center">
             <Link href="/" className="flex items-center mr-2">
-              <div className="relative h-8 w-16">
-                <Image src="/placeholder.svg?height=32&width=96" alt="ZYGO Search" fill className="object-contain" />
-              </div>
+              <div className="relative h-8 w-16"><Image src="/placeholder.svg?height=32&width=96" alt="ZYGO Search" fill className="object-contain" /></div>
               <span className="ml-1 font-bold text-xl text-purple-700 transition-colors">ZYGO</span>
             </Link>
           </div>
-
-          {/* Barre de recherche intégrée - prend plus d'espace sur mobile */}
           <div className="flex-1 max-w-3xl mx-2">
-            <form onSubmit={handleSearch} className="w-full">
-              <div
-                className={`relative w-full flex items-center transition-all duration-300 ${isFocused ? "scale-105" : "scale-100"}`}
-              >
-                {/* Effet de gradient animé lors du focus */}
-                <div
-                  className={`absolute inset-0 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-full opacity-0 ${isFocused ? "animate-pulse opacity-20" : ""}`}
-                ></div>
-                
-                {/* Input de recherche principal */}
+            <form onSubmit={onSearchSubmit} className="w-full">
+              <div className={`relative w-full flex items-center transition-all duration-300 ${isFocused ? "scale-105" : "scale-100"}`}>
+                <div className={`absolute inset-0 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-full opacity-0 ${isFocused ? "animate-pulse opacity-20" : ""}`}></div>
                 <input
                   ref={inputRef}
                   type="text"
